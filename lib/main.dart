@@ -32,6 +32,13 @@ class WorkoutListScreen extends StatelessWidget {
       body: const Center(
         child: Text('ここに記録が表示されます'),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // ボタンが押されたときの処理を今後ここに書きます
+        },
+        tooltip: '記録を追加',
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
