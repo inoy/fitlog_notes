@@ -4,16 +4,18 @@ A new Flutter project.
 
 ## 検証
 
-### 実機起動
+### 実機
 
 `flutter run`
 
 デバイスが複数登録されているならDevice IDを指定する `flutter run -d <device-id>`
 Device IDの確認 `flutter devices`
 
-### Simulator起動
+### Simulator
 
 `flutter run -d "iPhone 13 mini"`
+
+シミュレータ起動: `open -a Simulator`
 
 ### ホットリロード
 
