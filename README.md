@@ -17,7 +17,7 @@ Device IDの確認 `flutter devices`
 
 ### ホットリロード
 
-r押せば良い
+r or R押せば良い
 
 ```
 Flutter run key commands.
