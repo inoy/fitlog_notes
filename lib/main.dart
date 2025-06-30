@@ -20,8 +20,29 @@ class FitlogApp extends StatelessWidget {
   }
 }
 
-class WorkoutListScreen extends StatelessWidget {
+class WorkoutRecord {
+  final String name;
+  final int reps;
+  final int sets;
+
+  WorkoutRecord({required this.name, required this.reps, required this.sets});
+}
+
+class WorkoutListScreen extends StatefulWidget {
   const WorkoutListScreen({super.key});
+
+  @override
+  State<WorkoutListScreen> createState() => _WorkoutListScreenState();
+}
+
+class _WorkoutListScreenState extends State<WorkoutListScreen> {
+  final List<WorkoutRecord> _workoutRecords = [];
+
+  void _addWorkoutRecord(WorkoutRecord record) {
+    setState(() {
+      _workoutRecords.add(record);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +50,49 @@ class WorkoutListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('筋トレ記録'),
       ),
-      body: const Center(
-        child: Text('ここに記録が表示されます'),
-      ),
+      body: _workoutRecords.isEmpty
+          ? const Center(
+              child: Text('記録がありません。右下のボタンから追加してください。'),
+            )
+          : ListView.builder(
+              itemCount: _workoutRecords.length,
+              itemBuilder: (context, index) {
+                final record = _workoutRecords[index];
+                return Card(
+                  margin: const EdgeInsets.all(8.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          record.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8.0),
+                        Text('回数: ${record.reps}'),
+                        Text('セット数: ${record.sets}'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final newRecord = await Navigator.push<WorkoutRecord>(
             context,
-            MaterialPageRoute(builder: (context) => const AddWorkoutScreen()),
+            MaterialPageRoute(
+              builder: (context) => const AddWorkoutScreen(),
+            ),
           );
+
+          if (newRecord != null) {
+            _addWorkoutRecord(newRecord);
+          }
         },
         tooltip: '記録を追加',
         child: const Icon(Icons.add),
@@ -106,16 +161,20 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             ElevatedButton(
               onPressed: () {
                 final String workoutName = _workoutNameController.text;
-                final String reps = _repsController.text;
-                final String sets = _setsController.text;
+                final int? reps = int.tryParse(_repsController.text);
+                final int? sets = int.tryParse(_setsController.text);
 
-                // 今はコンソールに出力するだけ
-                print('種目名: $workoutName');
-                print('回数: $reps');
-                print('セット数: $sets');
-
-                // 記録を保存した後に前の画面に戻る（仮）
-                Navigator.pop(context);
+                if (workoutName.isNotEmpty && reps != null && sets != null) {
+                  final newRecord = WorkoutRecord(
+                    name: workoutName,
+                    reps: reps,
+                    sets: sets,
+                  );
+                  Navigator.pop(context, newRecord);
+                } else {
+                  // エラーハンドリング（例: SnackBarを表示するなど）
+                  print('入力が不完全です。');
+                }
               },
               child: const Text('保存'),
             ),
