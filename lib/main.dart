@@ -34,10 +34,29 @@ class WorkoutListScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // ボタンが押されたときの処理を今後ここに書きます
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddWorkoutScreen()),
+          );
         },
         tooltip: '記録を追加',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddWorkoutScreen extends StatelessWidget {
+  const AddWorkoutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('新しい記録'),
+      ),
+      body: const Center(
+        child: Text('記録入力フォームがここに表示されます'),
       ),
     );
   }
