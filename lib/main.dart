@@ -57,7 +57,9 @@ class WorkoutListScreen extends StatefulWidget {
 
 class _WorkoutListScreenState extends State<WorkoutListScreen> {
   final WorkoutRepository _repository = WorkoutRepository();
-  final List<WorkoutRecord> _workoutRecords = [];
+  final List<WorkoutRecord> _allWorkoutRecords = []; // 全ての記録を保持
+  List<WorkoutRecord> _filteredWorkoutRecords = []; // フィルタリングされた記録
+  DateTime? _filterDate; // フィルタリングする日付
 
   @override
   void initState() {
@@ -68,34 +70,84 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Future<void> _loadWorkouts() async {
     final List<String> encodedWorkouts = await _repository.loadWorkouts();
     setState(() {
-      _workoutRecords.addAll(encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))));
+      _allWorkoutRecords.clear();
+      _allWorkoutRecords.addAll(encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))));
+      _applyFilter(); // 読み込み後にフィルタを適用
+    });
+  }
+
+  void _applyFilter() {
+    setState(() {
+      if (_filterDate == null) {
+        _filteredWorkoutRecords = List.from(_allWorkoutRecords);
+      } else {
+        _filteredWorkoutRecords = _allWorkoutRecords.where((record) {
+          return record.date != null &&
+                 record.date!.year == _filterDate!.year &&
+                 record.date!.month == _filterDate!.month &&
+                 record.date!.day == _filterDate!.day;
+        }).toList();
+      }
     });
   }
 
   void _addWorkoutRecord(WorkoutRecord record) {
     setState(() {
-      _workoutRecords.add(record);
+      _allWorkoutRecords.add(record);
+      _applyFilter();
     });
     _saveWorkouts();
   }
 
   void _editWorkoutRecord(int index, WorkoutRecord updatedRecord) {
     setState(() {
-      _workoutRecords[index] = updatedRecord;
+      // _allWorkoutRecordsから元のレコードを見つけて更新
+      final originalIndex = _allWorkoutRecords.indexOf(_filteredWorkoutRecords[index]);
+      if (originalIndex != -1) {
+        _allWorkoutRecords[originalIndex] = updatedRecord;
+      }
+      _applyFilter();
     });
     _saveWorkouts();
   }
 
   void _removeWorkoutRecord(int index) {
     setState(() {
-      _workoutRecords.removeAt(index);
+      // _allWorkoutRecordsから元のレコードを見つけて削除
+      final originalIndex = _allWorkoutRecords.indexOf(_filteredWorkoutRecords[index]);
+      if (originalIndex != -1) {
+        _allWorkoutRecords.removeAt(originalIndex);
+      }
+      _applyFilter();
     });
     _saveWorkouts();
   }
 
   Future<void> _saveWorkouts() async {
-    final List<String> encodedWorkouts = _workoutRecords.map((e) => jsonEncode(e.toJson())).toList();
+    final List<String> encodedWorkouts = _allWorkoutRecords.map((e) => jsonEncode(e.toJson())).toList();
     await _repository.saveWorkouts(encodedWorkouts);
+  }
+
+  Future<void> _selectFilterDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _filterDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      setState(() {
+        _filterDate = picked;
+        _applyFilter();
+      });
+    }
+  }
+
+  void _clearFilter() {
+    setState(() {
+      _filterDate = null;
+      _applyFilter();
+    });
   }
 
   @override
@@ -107,18 +159,34 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('筋トレ記録'),
+        title: Text(
+          _filterDate == null
+              ? '筋トレ記録'
+              : '筋トレ記録 (${DateFormat('yyyy/MM/dd').format(_filterDate!)})',
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(_filterDate == null ? Icons.filter_list : Icons.filter_list_off),
+            onPressed: () {
+              if (_filterDate == null) {
+                _selectFilterDate(context);
+              } else {
+                _clearFilter();
+              }
+            },
+          ),
+        ],
       ),
-      body: _workoutRecords.isEmpty
+      body: _filteredWorkoutRecords.isEmpty
           ? const _EmptyWorkoutListMessage()
           : ListView.builder(
-              itemCount: _workoutRecords.length,
+              itemCount: _filteredWorkoutRecords.length,
               itemBuilder: (context, index) {
-                final record = _workoutRecords[index];
+                final record = _filteredWorkoutRecords[index];
                 return WorkoutRecordItem(
                   record: record,
                   index: index,
-                  onDismissed: _removeWorkoutRecord,
+                  onDismissed: (idx) => _removeWorkoutRecord(idx),
                   onTap: () async {
                     final updatedRecord = await Navigator.push<WorkoutRecord>(
                       context,
