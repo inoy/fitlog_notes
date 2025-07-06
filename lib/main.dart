@@ -1,7 +1,29 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:fitlog_notes/data/workout_repository.dart';
 
 void main() {
   runApp(const FitlogApp());
+}
+
+class WorkoutRecord {
+  final String name;
+  final int reps;
+  final int sets;
+
+  WorkoutRecord({required this.name, required this.reps, required this.sets});
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'reps': reps,
+        'sets': sets,
+      };
+
+  factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
+        name: json['name'] as String,
+        reps: json['reps'] as int,
+        sets: json['sets'] as int,
+      );
 }
 
 class FitlogApp extends StatelessWidget {
@@ -20,13 +42,7 @@ class FitlogApp extends StatelessWidget {
   }
 }
 
-class WorkoutRecord {
-  final String name;
-  final int reps;
-  final int sets;
 
-  WorkoutRecord({required this.name, required this.reps, required this.sets});
-}
 
 class WorkoutListScreen extends StatefulWidget {
   const WorkoutListScreen({super.key});
@@ -36,12 +52,37 @@ class WorkoutListScreen extends StatefulWidget {
 }
 
 class _WorkoutListScreenState extends State<WorkoutListScreen> {
+  final WorkoutRepository _repository = WorkoutRepository();
   final List<WorkoutRecord> _workoutRecords = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkouts();
+  }
+
+  Future<void> _loadWorkouts() async {
+    final List<String> encodedWorkouts = await _repository.loadWorkouts();
+    setState(() {
+      _workoutRecords.addAll(encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))));
+    });
+  }
 
   void _addWorkoutRecord(WorkoutRecord record) {
     setState(() {
       _workoutRecords.add(record);
     });
+    _saveWorkouts();
+  }
+
+  Future<void> _saveWorkouts() async {
+    final List<String> encodedWorkouts = _workoutRecords.map((e) => jsonEncode(e.toJson())).toList();
+    await _repository.saveWorkouts(encodedWorkouts);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -173,7 +214,6 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                   Navigator.pop(context, newRecord);
                 } else {
                   // エラーハンドリング（例: SnackBarを表示するなど）
-                  print('入力が不完全です。');
                 }
               },
               child: const Text('保存'),
