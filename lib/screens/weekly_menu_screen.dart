@@ -5,6 +5,8 @@ import 'package:fitlog_notes/models/weekly_menu_item.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 import 'package:fitlog_notes/models/workout_type.dart';
 
+import 'package:fitlog_notes/screens/add_weekly_menu_item_screen.dart';
+
 class WeeklyMenuScreen extends StatefulWidget {
   const WeeklyMenuScreen({super.key});
 
@@ -33,7 +35,16 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
     });
   }
 
-  // TODO: メニュー項目の追加・編集・削除ロジック
+  void _addWeeklyMenuItem(WeeklyMenuItem item) {
+    setState(() {
+      _weeklyMenu.add(item);
+    });
+    _saveWeeklyMenu();
+  }
+
+  Future<void> _saveWeeklyMenu() async {
+    await _weeklyMenuRepository.saveWeeklyMenu(_weeklyMenu);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +84,16 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: メニュー追加画面への遷移
+        onPressed: () async {
+          final newMenuItem = await Navigator.push<WeeklyMenuItem>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddWeeklyMenuItemScreen(),
+            ),
+          );
+          if (newMenuItem != null) {
+            _addWeeklyMenuItem(newMenuItem);
+          }
         },
         child: const Icon(Icons.add),
       ),
