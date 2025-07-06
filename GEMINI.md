@@ -50,3 +50,6 @@ Flutter開発において、UIの複雑性を管理し、コードの可読性�
 *   ウィジェット分割のベストプラクティス適用
 *   筋トレ種目管理機能の基盤（`Exercise`モデル、`ExerciseRepository`、`ExerciseListScreen`）
 *   週間筋トレメニュー管理機能の基盤（`WorkoutType`、`WorkoutDetail`、`WeeklyMenuItem`モデル、`WeeklyWorkoutMenuRepository`、`WeeklyMenuScreen`の基本構造、`WorkoutListScreen`からの導線）
+*   種目管理機能の拡張（`Exercise`モデルに`WorkoutType`を追加、`ExerciseListScreen`で`WorkoutType`の選択UIを実装）
+*   筋トレ記録機能の更新（`WorkoutRecord`モデルを`List<WorkoutDetail>`に対応、`AddWorkoutScreen`と`WorkoutRecordItem`を更新）
+*   週間メニュー追加画面の実装（`AddWeeklyMenuItemScreen`で種目、曜日、複数の`WorkoutDetail`の入力に対応）

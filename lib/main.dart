@@ -5,6 +5,8 @@ import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 import 'package:fitlog_notes/screens/exercise_list_screen.dart';
 import 'package:fitlog_notes/screens/weekly_menu_screen.dart';
+import 'package:fitlog_notes/models/workout_detail.dart';
+import 'package:fitlog_notes/models/workout_type.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -14,28 +16,26 @@ void main() {
 
 class WorkoutRecord {
   final String exerciseId; // 種目のID
-  final int reps;
-  final int sets;
+  final List<WorkoutDetail> details;
   final DateTime? date;
 
   WorkoutRecord({
     required this.exerciseId,
-    required this.reps,
-    required this.sets,
+    required this.details,
     this.date,
   });
 
   Map<String, dynamic> toJson() => {
     'exerciseId': exerciseId,
-    'reps': reps,
-    'sets': sets,
+    'details': details.map((d) => d.toJson()).toList(),
     'date': date?.toIso8601String(),
   };
 
   factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
     exerciseId: json['exerciseId'] as String,
-    reps: json['reps'] as int,
-    sets: json['sets'] as int,
+    details: (json['details'] as List)
+        .map((d) => WorkoutDetail.fromJson(d as Map<String, dynamic>))
+        .toList(),
     date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
   );
 }
@@ -373,8 +373,8 @@ class _WorkoutRecordItemState extends State<WorkoutRecordItem> {
                   Text(
                     '日付: ${widget.record.date != null ? DateFormat('yyyy/MM/dd').format(widget.record.date!) : '未設定'}',
                   ),
-                  Text('回数: ${widget.record.reps}'),
-                  Text('セット数: ${widget.record.sets}'),
+                  ...widget.record.details.map((detail) => Text(
+                      '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')).toList(),
                 ],
               ),
             ),
@@ -398,9 +398,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final ExerciseRepository _exerciseRepository = ExerciseRepository();
   List<Exercise> _exercises = [];
   String? _selectedExerciseId;
-
-  final TextEditingController _repsController = TextEditingController();
-  final TextEditingController _setsController = TextEditingController();
+  final List<WorkoutDetail> _workoutDetails = [];
   DateTime? _selectedDate;
 
   @override
@@ -409,8 +407,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
     _loadExercises();
     if (widget.initialRecord != null) {
       _selectedExerciseId = widget.initialRecord!.exerciseId;
-      _repsController.text = widget.initialRecord!.reps.toString();
-      _setsController.text = widget.initialRecord!.sets.toString();
+      _workoutDetails.addAll(widget.initialRecord!.details);
       _selectedDate = widget.initialRecord!.date;
     } else {
       _selectedDate = DateTime.now(); // 新規作成時は現在日付をデフォルトに
@@ -441,10 +438,38 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
     }
   }
 
+  void _addWorkoutDetail(WorkoutType defaultType) {
+    setState(() {
+      _workoutDetails.add(WorkoutDetail(value: 0, type: defaultType));
+    });
+  }
+
+  void _removeWorkoutDetail(int index) {
+    setState(() {
+      _workoutDetails.removeAt(index);
+    });
+  }
+
+  void _updateWorkoutDetailValue(int index, String value) {
+    setState(() {
+      _workoutDetails[index] = WorkoutDetail(
+        value: int.tryParse(value) ?? 0,
+        type: _workoutDetails[index].type,
+      );
+    });
+  }
+
+  void _updateWorkoutDetailType(int index, WorkoutType type) {
+    setState(() {
+      _workoutDetails[index] = WorkoutDetail(
+        value: _workoutDetails[index].value,
+        type: type,
+      );
+    });
+  }
+
   @override
   void dispose() {
-    _repsController.dispose();
-    _setsController.dispose();
     super.dispose();
   }
 
@@ -480,6 +505,12 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               onChanged: (String? newValue) {
                 setState(() {
                   _selectedExerciseId = newValue;
+                  // 種目選択時にデフォルトのWorkoutTypeを設定
+                  if (newValue != null) {
+                    final selectedExercise = _exercises.firstWhere((e) => e.id == newValue);
+                    _workoutDetails.clear(); // 既存の詳細をクリア
+                    _addWorkoutDetail(selectedExercise.defaultWorkoutType);
+                  }
                 });
               },
               validator: (value) {
@@ -490,34 +521,71 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               },
             ),
             const SizedBox(height: 16.0),
-            TextField(
-              controller: _repsController,
-              decoration: const InputDecoration(
-                labelText: '回数',
-                border: OutlineInputBorder(),
+            Text('詳細', style: Theme.of(context).textTheme.titleMedium),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _workoutDetails.length,
+                itemBuilder: (context, index) {
+                  final detail = _workoutDetails[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: TextEditingController(text: detail.value.toString()),
+                              decoration: const InputDecoration(
+                                labelText: '値',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _updateWorkoutDetailValue(index, value),
+                            ),
+                          ),
+                          const SizedBox(width: 8.0),
+                          DropdownButton<WorkoutType>(
+                            value: detail.type,
+                            items: WorkoutType.values.map((type) {
+                              return DropdownMenuItem(
+                                value: type,
+                                child: Text(type == WorkoutType.reps ? '回' : '秒'),
+                              );
+                            }).toList(),
+                            onChanged: (WorkoutType? newType) {
+                              if (newType != null) {
+                                _updateWorkoutDetailType(index, newType);
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _removeWorkoutDetail(index),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-              keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: _setsController,
-              decoration: const InputDecoration(
-                labelText: 'セット数',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
+            ElevatedButton(
+              onPressed: () {
+                if (_selectedExerciseId != null) {
+                  final selectedExercise = _exercises.firstWhere((e) => e.id == _selectedExerciseId);
+                  _addWorkoutDetail(selectedExercise.defaultWorkoutType);
+                }
+              },
+              child: const Text('詳細を追加'),
             ),
             const SizedBox(height: 32.0),
             ElevatedButton(
               onPressed: () {
-                final int? reps = int.tryParse(_repsController.text);
-                final int? sets = int.tryParse(_setsController.text);
-
-                if (_selectedExerciseId != null && reps != null && sets != null) {
+                if (_selectedExerciseId != null && _workoutDetails.isNotEmpty) {
                   final newRecord = WorkoutRecord(
                     exerciseId: _selectedExerciseId!,
-                    reps: reps,
-                    sets: sets,
+                    details: _workoutDetails,
                     date: _selectedDate,
                   );
                   Navigator.pop(context, newRecord);

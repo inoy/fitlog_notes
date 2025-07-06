@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
+import 'package:fitlog_notes/models/workout_type.dart';
 import 'package:uuid/uuid.dart';
 
 class ExerciseListScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
   final ExerciseRepository _repository = ExerciseRepository();
   List<Exercise> _exercises = [];
   final TextEditingController _exerciseNameController = TextEditingController();
+  WorkoutType _selectedWorkoutType = WorkoutType.reps; // デフォルトは回数
   final Uuid _uuid = const Uuid();
 
   @override
@@ -36,10 +38,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     final newExercise = Exercise(
       id: _uuid.v4(),
       name: _exerciseNameController.text,
+      defaultWorkoutType: _selectedWorkoutType,
     );
     setState(() {
       _exercises.add(newExercise);
       _exerciseNameController.clear();
+      _selectedWorkoutType = WorkoutType.reps; // 追加後リセット
     });
     await _repository.saveExercises(_exercises);
   }
@@ -67,21 +71,53 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _exerciseNameController,
-                    decoration: const InputDecoration(
-                      labelText: '新しい種目名',
-                      border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _exerciseNameController,
+                        decoration: const InputDecoration(
+                          labelText: '新しい種目名',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8.0),
+                    ElevatedButton(
+                      onPressed: _addExercise,
+                      child: const Text('追加'),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8.0),
-                ElevatedButton(
-                  onPressed: _addExercise,
-                  child: const Text('追加'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<WorkoutType>(
+                        title: const Text('回数'),
+                        value: WorkoutType.reps,
+                        groupValue: _selectedWorkoutType,
+                        onChanged: (WorkoutType? value) {
+                          setState(() {
+                            _selectedWorkoutType = value!;
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<WorkoutType>(
+                        title: const Text('秒数'),
+                        value: WorkoutType.seconds,
+                        groupValue: _selectedWorkoutType,
+                        onChanged: (WorkoutType? value) {
+                          setState(() {
+                            _selectedWorkoutType = value!;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -105,13 +141,16 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                         onDismissed: (direction) {
                           _removeExercise(index);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('「${exercise.name}」を削除しました')),
+                            SnackBar(content: Text(
+                                '「${exercise.name} (${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'})」を削除しました')),
                           );
                         },
                         child: Card(
                           margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                           child: ListTile(
                             title: Text(exercise.name),
+                            subtitle: Text(
+                                'タイプ: ${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'}'),
                           ),
                         ),
                       );
