@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
+import 'package:fitlog_notes/data/exercise_repository.dart';
+import 'package:fitlog_notes/models/exercise.dart';
+import 'package:fitlog_notes/screens/exercise_list_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -9,27 +12,27 @@ void main() {
 }
 
 class WorkoutRecord {
-  final String name;
+  final String exerciseId; // 種目のID
   final int reps;
   final int sets;
   final DateTime? date;
 
   WorkoutRecord({
-    required this.name,
+    required this.exerciseId,
     required this.reps,
     required this.sets,
     this.date,
   });
 
   Map<String, dynamic> toJson() => {
-    'name': name,
+    'exerciseId': exerciseId,
     'reps': reps,
     'sets': sets,
     'date': date?.toIso8601String(),
   };
 
   factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
-    name: json['name'] as String,
+    exerciseId: json['exerciseId'] as String,
     reps: json['reps'] as int,
     sets: json['sets'] as int,
     date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
@@ -61,6 +64,7 @@ class WorkoutListScreen extends StatefulWidget {
 
 class _WorkoutListScreenState extends State<WorkoutListScreen> {
   final WorkoutRepository _repository = WorkoutRepository();
+  final ExerciseRepository _exerciseRepository = ExerciseRepository();
   final List<WorkoutRecord> _allWorkoutRecords = []; // 全ての記録を保持
   List<WorkoutRecord> _filteredWorkoutRecords = []; // フィルタリングされた記録
   DateTime _focusedDay = DateTime.now(); // カレンダーの表示月
@@ -147,6 +151,17 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
+        leading: IconButton(
+          icon: const Icon(Icons.fitness_center),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ExerciseListScreen(),
+              ),
+            );
+          },
+        ),
       ),
       body: Column(
         children: [
@@ -205,6 +220,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                             _editWorkoutRecord(index, updatedRecord);
                           }
                         },
+                        exerciseRepository: _exerciseRepository,
                       );
                     },
                   ),
@@ -238,11 +254,12 @@ class _EmptyWorkoutListMessage extends StatelessWidget {
   }
 }
 
-class WorkoutRecordItem extends StatelessWidget {
+class WorkoutRecordItem extends StatefulWidget {
   final WorkoutRecord record;
   final ValueChanged<int> onDismissed;
   final int index;
   final VoidCallback? onTap;
+  final ExerciseRepository exerciseRepository;
 
   const WorkoutRecordItem({
     super.key,
@@ -250,14 +267,45 @@ class WorkoutRecordItem extends StatelessWidget {
     required this.onDismissed,
     required this.index,
     this.onTap,
+    required this.exerciseRepository,
   });
+
+  @override
+  State<WorkoutRecordItem> createState() => _WorkoutRecordItemState();
+}
+
+class _WorkoutRecordItemState extends State<WorkoutRecordItem> {
+  String _exerciseName = 'Unknown Exercise';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExerciseName();
+  }
+
+  @override
+  void didUpdateWidget(covariant WorkoutRecordItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.record.exerciseId != widget.record.exerciseId) {
+      _loadExerciseName();
+    }
+  }
+
+  Future<void> _loadExerciseName() async {
+    final exercise = await widget.exerciseRepository.getExerciseById(
+      widget.record.exerciseId,
+    );
+    setState(() {
+      _exerciseName = exercise?.name ?? 'Unknown Exercise';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Dismissible(
-        key: ObjectKey(record),
+        key: ObjectKey(widget.record),
         background: Container(
           color: Colors.red,
           alignment: Alignment.centerRight,
@@ -287,13 +335,13 @@ class WorkoutRecordItem extends StatelessWidget {
           );
         },
         onDismissed: (direction) {
-          onDismissed(index);
+          widget.onDismissed(widget.index);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('「${record.name}」を削除しました')));
+          ).showSnackBar(SnackBar(content: Text('「$_exerciseName」を削除しました')));
         },
         child: GestureDetector(
-          onTap: onTap,
+          onTap: widget.onTap,
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -301,7 +349,7 @@ class WorkoutRecordItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    record.name,
+                    _exerciseName,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -309,11 +357,10 @@ class WorkoutRecordItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 8.0),
                   Text(
-                    '日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}',
+                    '日付: ${widget.record.date != null ? DateFormat('yyyy/MM/dd').format(widget.record.date!) : '未設定'}',
                   ),
-                  Text('回数: ${record.reps}'),
-                  Text('セット数: ${record.sets}'),
-
+                  Text('回数: ${widget.record.reps}'),
+                  Text('セット数: ${widget.record.sets}'),
                 ],
               ),
             ),
@@ -334,7 +381,10 @@ class AddWorkoutScreen extends StatefulWidget {
 }
 
 class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
-  final TextEditingController _workoutNameController = TextEditingController();
+  final ExerciseRepository _exerciseRepository = ExerciseRepository();
+  List<Exercise> _exercises = [];
+  String? _selectedExerciseId;
+
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
   DateTime? _selectedDate;
@@ -342,14 +392,25 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    _loadExercises();
     if (widget.initialRecord != null) {
-      _workoutNameController.text = widget.initialRecord!.name;
+      _selectedExerciseId = widget.initialRecord!.exerciseId;
       _repsController.text = widget.initialRecord!.reps.toString();
       _setsController.text = widget.initialRecord!.sets.toString();
       _selectedDate = widget.initialRecord!.date;
     } else {
       _selectedDate = DateTime.now(); // 新規作成時は現在日付をデフォルトに
     }
+  }
+
+  Future<void> _loadExercises() async {
+    final loadedExercises = await _exerciseRepository.loadExercises();
+    setState(() {
+      _exercises = loadedExercises;
+      if (_selectedExerciseId == null && _exercises.isNotEmpty) {
+        _selectedExerciseId = _exercises.first.id;
+      }
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -368,7 +429,6 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
 
   @override
   void dispose() {
-    _workoutNameController.dispose();
     _repsController.dispose();
     _setsController.dispose();
     super.dispose();
@@ -391,12 +451,29 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               onTap: () => _selectDate(context),
             ),
             const SizedBox(height: 16.0),
-            TextField(
-              controller: _workoutNameController,
+            DropdownButtonFormField<String>(
+              value: _selectedExerciseId,
               decoration: const InputDecoration(
                 labelText: '種目名',
                 border: OutlineInputBorder(),
               ),
+              items: _exercises.map((exercise) {
+                return DropdownMenuItem(
+                  value: exercise.id,
+                  child: Text(exercise.name),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedExerciseId = newValue;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return '種目を選択してください';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16.0),
             TextField(
@@ -419,13 +496,12 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             const SizedBox(height: 32.0),
             ElevatedButton(
               onPressed: () {
-                final String workoutName = _workoutNameController.text;
                 final int? reps = int.tryParse(_repsController.text);
                 final int? sets = int.tryParse(_setsController.text);
 
-                if (workoutName.isNotEmpty && reps != null && sets != null) {
+                if (_selectedExerciseId != null && reps != null && sets != null) {
                   final newRecord = WorkoutRecord(
-                    name: workoutName,
+                    exerciseId: _selectedExerciseId!,
                     reps: reps,
                     sets: sets,
                     date: _selectedDate,

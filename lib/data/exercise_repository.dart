@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 
+import 'package:collection/collection.dart';
+
 class ExerciseRepository {
   static const _keyExercises = 'exercises';
 
@@ -18,5 +20,10 @@ class ExerciseRepository {
       return [];
     }
     return encodedExercises.map((e) => Exercise.fromJson(jsonDecode(e))).toList();
+  }
+
+  Future<Exercise?> getExerciseById(String id) async {
+    final exercises = await loadExercises();
+    return exercises.firstWhereOrNull((exercise) => exercise.id == id);
   }
 }
