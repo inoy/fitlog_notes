@@ -36,3 +36,28 @@ Flutter開発において、UIの複雑性を管理し、コードの可読性�
     *   親ウィジェットから子ウィジェットへはデータを渡し、子ウィジェットから親ウィジェットへはイベントを通知する、という一方向のデータフローを意識します。
 
 この方針は、今後のすべてのFlutter開発に適用し、コードベースの一貫性と品質を維持します。
+
+## 現在の進捗と次のステップ
+
+### 実装済みの機能
+
+*   Flutterプロジェクトの初期設定
+*   筋トレ記録の追加、表示、永続化（`shared_preferences`による保存・読み込み）
+*   筋トレ記録の編集機能
+*   筋トレ記録の削除機能
+*   筋トレ記録に日付を追加する機能（nullable対応済み）
+*   トップ画面にカレンダーと今日の記録表示（`table_calendar`導入済み）
+*   ウィジェット分割のベストプラクティス適用
+*   筋トレ種目管理機能の基盤（`Exercise`モデル、`ExerciseRepository`、`ExerciseListScreen`）
+
+### 次のステップ：筋トレ記録と種目管理機能の統合
+
+現在、筋トレ記録と種目管理機能の統合を進めています。以下のタスクが完了済みです。
+
+*   `WorkoutRecord`モデルの`name`フィールドを`exerciseId`に変更済み。
+*   `AddWorkoutScreen`で、種目名入力フィールドを登録済み種目からの選択UI（`DropdownButtonFormField`）に変更済み。
+*   `WorkoutListScreen`の`AppBar`に種目管理画面への導線を追加済み。
+
+**残りのタスク:**
+
+*   `WorkoutRecordItem`ウィジェットで、`WorkoutRecord`の`exerciseId`から実際の種目名を取得し、表示する部分の実装が残っています。現在、`WorkoutRecordItem`は`record.name`を表示しようとしていますが、`WorkoutRecord`モデルから`name`フィールドが削除されたため、この部分が機能していません。次回はこの部分の修正から着手します。
