@@ -75,6 +75,13 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     _saveWorkouts();
   }
 
+  void _removeWorkoutRecord(int index) {
+    setState(() {
+      _workoutRecords.removeAt(index);
+    });
+    _saveWorkouts();
+  }
+
   Future<void> _saveWorkouts() async {
     final List<String> encodedWorkouts = _workoutRecords.map((e) => jsonEncode(e.toJson())).toList();
     await _repository.saveWorkouts(encodedWorkouts);
@@ -99,24 +106,63 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
               itemCount: _workoutRecords.length,
               itemBuilder: (context, index) {
                 final record = _workoutRecords[index];
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          record.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Dismissible(
+                    key: ObjectKey(record),
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20.0),
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (direction) async {
+                      return await showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text("確認"),
+                            content: const Text("この記録を削除してもよろしいですか？"),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text("キャンセル"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text("削除"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    onDismissed: (direction) {
+                      _removeWorkoutRecord(index);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('「${record.name}」を削除しました')),
+                      );
+                    },
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              record.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8.0),
+                            Text('回数: ${record.reps}'),
+                            Text('セット数: ${record.sets}'),
+                          ],
                         ),
-                        const SizedBox(height: 8.0),
-                        Text('回数: ${record.reps}'),
-                        Text('セット数: ${record.sets}'),
-                      ],
+                      ),
                     ),
                   ),
                 );
