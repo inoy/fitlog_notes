@@ -99,72 +99,15 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
         title: const Text('筋トレ記録'),
       ),
       body: _workoutRecords.isEmpty
-          ? const Center(
-              child: Text('記録がありません。右下のボタンから追加してください。'),
-            )
+          ? const _EmptyWorkoutListMessage()
           : ListView.builder(
               itemCount: _workoutRecords.length,
               itemBuilder: (context, index) {
                 final record = _workoutRecords[index];
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Dismissible(
-                    key: ObjectKey(record),
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20.0),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (direction) async {
-                      return await showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text("確認"),
-                            content: const Text("この記録を削除してもよろしいですか？"),
-                            actions: <Widget>[
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
-                                child: const Text("キャンセル"),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(true),
-                                child: const Text("削除"),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                    onDismissed: (direction) {
-                      _removeWorkoutRecord(index);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('「${record.name}」を削除しました')),
-                      );
-                    },
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              record.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8.0),
-                            Text('回数: ${record.reps}'),
-                            Text('セット数: ${record.sets}'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                return WorkoutRecordItem(
+                  record: record,
+                  index: index,
+                  onDismissed: _removeWorkoutRecord,
                 );
               },
             ),
@@ -183,6 +126,95 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
         },
         tooltip: '記録を追加',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class _EmptyWorkoutListMessage extends StatelessWidget {
+  const _EmptyWorkoutListMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('記録がありません。右下のボタンから追加してください。'),
+    );
+  }
+}
+
+
+class WorkoutRecordItem extends StatelessWidget {
+  final WorkoutRecord record;
+  final ValueChanged<int> onDismissed;
+  final int index;
+
+  const WorkoutRecordItem({
+    super.key,
+    required this.record,
+    required this.onDismissed,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Dismissible(
+        key: ObjectKey(record),
+        background: Container(
+          color: Colors.red,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20.0),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          return await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("確認"),
+                content: const Text("この記録を削除してもよろしいですか？"),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text("キャンセル"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text("削除"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        onDismissed: (direction) {
+          onDismissed(index);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('「${record.name}」を削除しました')),
+          );
+        },
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  record.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                Text('回数: ${record.reps}'),
+                Text('セット数: ${record.sets}'),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
