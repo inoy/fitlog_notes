@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 void main() {
   runApp(const FitlogApp());
@@ -59,7 +60,8 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   final WorkoutRepository _repository = WorkoutRepository();
   final List<WorkoutRecord> _allWorkoutRecords = []; // 全ての記録を保持
   List<WorkoutRecord> _filteredWorkoutRecords = []; // フィルタリングされた記録
-  DateTime? _filterDate; // フィルタリングする日付
+  DateTime _focusedDay = DateTime.now(); // カレンダーの表示月
+  DateTime _selectedDay = DateTime.now(); // 選択された日付
 
   @override
   void initState() {
@@ -78,16 +80,12 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
 
   void _applyFilter() {
     setState(() {
-      if (_filterDate == null) {
-        _filteredWorkoutRecords = List.from(_allWorkoutRecords);
-      } else {
-        _filteredWorkoutRecords = _allWorkoutRecords.where((record) {
-          return record.date != null &&
-                 record.date!.year == _filterDate!.year &&
-                 record.date!.month == _filterDate!.month &&
-                 record.date!.day == _filterDate!.day;
-        }).toList();
-      }
+      _filteredWorkoutRecords = _allWorkoutRecords.where((record) {
+        return record.date != null &&
+               record.date!.year == _selectedDay.year &&
+               record.date!.month == _selectedDay.month &&
+               record.date!.day == _selectedDay.day;
+      }).toList();
     });
   }
 
@@ -128,28 +126,6 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     await _repository.saveWorkouts(encodedWorkouts);
   }
 
-  Future<void> _selectFilterDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _filterDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        _filterDate = picked;
-        _applyFilter();
-      });
-    }
-  }
-
-  void _clearFilter() {
-    setState(() {
-      _filterDate = null;
-      _applyFilter();
-    });
-  }
-
   @override
   void dispose() {
     super.dispose();
@@ -159,49 +135,69 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _filterDate == null
-              ? '筋トレ記録'
-              : '筋トレ記録 (${DateFormat('yyyy/MM/dd').format(_filterDate!)})',
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(_filterDate == null ? Icons.filter_list : Icons.filter_list_off),
-            onPressed: () {
-              if (_filterDate == null) {
-                _selectFilterDate(context);
-              } else {
-                _clearFilter();
-              }
+        title: Text('筋トレ記録 (${DateFormat('yyyy/MM/dd').format(_selectedDay)})'),
+      ),
+      body: Column(
+        children: [
+          TableCalendar(
+            focusedDay: _focusedDay,
+            firstDay: DateTime.utc(2000, 1, 1),
+            lastDay: DateTime.utc(2050, 12, 31),
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
             },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+                _applyFilter();
+              });
+            },
+            calendarFormat: CalendarFormat.week,
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
+            calendarStyle: const CalendarStyle(
+              todayDecoration: BoxDecoration(
+                color: Colors.blueGrey,
+                shape: BoxShape.circle,
+              ),
+              selectedDecoration: BoxDecoration(
+                color: Colors.blueAccent,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _filteredWorkoutRecords.isEmpty
+                ? const _EmptyWorkoutListMessage()
+                : ListView.builder(
+                    itemCount: _filteredWorkoutRecords.length,
+                    itemBuilder: (context, index) {
+                      final record = _filteredWorkoutRecords[index];
+                      return WorkoutRecordItem(
+                        record: record,
+                        index: index,
+                        onDismissed: (idx) => _removeWorkoutRecord(idx),
+                        onTap: () async {
+                          final updatedRecord = await Navigator.push<WorkoutRecord>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddWorkoutScreen(initialRecord: record),
+                            ),
+                          );
+
+                          if (updatedRecord != null) {
+                            _editWorkoutRecord(index, updatedRecord);
+                          }
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
-      body: _filteredWorkoutRecords.isEmpty
-          ? const _EmptyWorkoutListMessage()
-          : ListView.builder(
-              itemCount: _filteredWorkoutRecords.length,
-              itemBuilder: (context, index) {
-                final record = _filteredWorkoutRecords[index];
-                return WorkoutRecordItem(
-                  record: record,
-                  index: index,
-                  onDismissed: (idx) => _removeWorkoutRecord(idx),
-                  onTap: () async {
-                    final updatedRecord = await Navigator.push<WorkoutRecord>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AddWorkoutScreen(initialRecord: record),
-                      ),
-                    );
-
-                    if (updatedRecord != null) {
-                      _editWorkoutRecord(index, updatedRecord);
-                    }
-                  },
-                );
-              },
-            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final newRecord = await Navigator.push<WorkoutRecord>(
