@@ -1,0 +1,4 @@
+enum WorkoutType {
+  reps,
+  seconds,
+}

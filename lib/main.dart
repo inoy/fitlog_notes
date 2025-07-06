@@ -4,6 +4,7 @@ import 'package:fitlog_notes/data/workout_repository.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 import 'package:fitlog_notes/screens/exercise_list_screen.dart';
+import 'package:fitlog_notes/screens/weekly_menu_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -162,6 +163,19 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
             );
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_view_week),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WeeklyMenuScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
