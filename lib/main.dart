@@ -66,6 +66,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   DateTime _focusedDay = DateTime.now(); // カレンダーの表示月
   DateTime _selectedDay = DateTime.now(); // 選択された日付
 
+  int _totalSets = 0;
+  int _totalReps = 0;
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +94,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
             record.date!.month == _selectedDay.month &&
             record.date!.day == _selectedDay.day;
       }).toList();
+
+      _totalSets = _filteredWorkoutRecords.fold(0, (sum, record) => sum + record.sets);
+      _totalReps = _filteredWorkoutRecords.fold(0, (sum, record) => sum + record.reps);
     });
   }
 
@@ -178,6 +184,16 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                 color: Colors.blueAccent,
                 shape: BoxShape.circle,
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Text('合計セット数: ' + _totalSets.toString()),
+                Text('合計回数: ' + _totalReps.toString()),
+              ],
             ),
           ),
           Expanded(
