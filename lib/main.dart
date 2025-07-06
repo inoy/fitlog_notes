@@ -312,7 +312,8 @@ class WorkoutRecordItem extends StatelessWidget {
                     '日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}',
                   ),
                   Text('回数: ${record.reps}'),
-                                  
+                  Text('セット数: ${record.sets}'),
+
                 ],
               ),
             ),
