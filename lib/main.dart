@@ -75,6 +75,13 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     _saveWorkouts();
   }
 
+  void _editWorkoutRecord(int index, WorkoutRecord updatedRecord) {
+    setState(() {
+      _workoutRecords[index] = updatedRecord;
+    });
+    _saveWorkouts();
+  }
+
   void _removeWorkoutRecord(int index) {
     setState(() {
       _workoutRecords.removeAt(index);
@@ -108,6 +115,18 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                   record: record,
                   index: index,
                   onDismissed: _removeWorkoutRecord,
+                  onTap: () async {
+                    final updatedRecord = await Navigator.push<WorkoutRecord>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddWorkoutScreen(initialRecord: record),
+                      ),
+                    );
+
+                    if (updatedRecord != null) {
+                      _editWorkoutRecord(index, updatedRecord);
+                    }
+                  },
                 );
               },
             ),
@@ -147,12 +166,14 @@ class WorkoutRecordItem extends StatelessWidget {
   final WorkoutRecord record;
   final ValueChanged<int> onDismissed;
   final int index;
+  final VoidCallback? onTap;
 
   const WorkoutRecordItem({
     super.key,
     required this.record,
     required this.onDismissed,
     required this.index,
+    this.onTap,
   });
 
   @override
@@ -195,23 +216,26 @@ class WorkoutRecordItem extends StatelessWidget {
             SnackBar(content: Text('「${record.name}」を削除しました')),
           );
         },
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  record.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    record.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                Text('回数: ${record.reps}'),
-                Text('セット数: ${record.sets}'),
-              ],
+                  const SizedBox(height: 8.0),
+                  Text('回数: ${record.reps}'),
+                  Text('セット数: ${record.sets}'),
+                ],
+              ),
             ),
           ),
         ),
@@ -221,7 +245,9 @@ class WorkoutRecordItem extends StatelessWidget {
 }
 
 class AddWorkoutScreen extends StatefulWidget {
-  const AddWorkoutScreen({super.key});
+  final WorkoutRecord? initialRecord;
+
+  const AddWorkoutScreen({super.key, this.initialRecord});
 
   @override
   State<AddWorkoutScreen> createState() => _AddWorkoutScreenState();
@@ -231,6 +257,16 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final TextEditingController _workoutNameController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialRecord != null) {
+      _workoutNameController.text = widget.initialRecord!.name;
+      _repsController.text = widget.initialRecord!.reps.toString();
+      _setsController.text = widget.initialRecord!.sets.toString();
+    }
+  }
 
   @override
   void dispose() {
