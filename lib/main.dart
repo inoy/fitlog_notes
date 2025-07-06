@@ -26,7 +26,7 @@ class WorkoutRecord {
         name: json['name'] as String,
         reps: json['reps'] as int,
         sets: json['sets'] as int,
-        date: DateTime.parse(json['date'] as String),
+        date: json['date'] != null ? DateTime.parse(json['date'] as String) : DateTime.now(),
       );
 }
 
