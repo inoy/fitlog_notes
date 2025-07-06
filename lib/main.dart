@@ -14,21 +14,26 @@ class WorkoutRecord {
   final int sets;
   final DateTime? date;
 
-  WorkoutRecord({required this.name, required this.reps, required this.sets, this.date});
+  WorkoutRecord({
+    required this.name,
+    required this.reps,
+    required this.sets,
+    this.date,
+  });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'reps': reps,
-        'sets': sets,
-        'date': date?.toIso8601String(),
-      };
+    'name': name,
+    'reps': reps,
+    'sets': sets,
+    'date': date?.toIso8601String(),
+  };
 
   factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
-        name: json['name'] as String,
-        reps: json['reps'] as int,
-        sets: json['sets'] as int,
-        date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
-      );
+    name: json['name'] as String,
+    reps: json['reps'] as int,
+    sets: json['sets'] as int,
+    date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
+  );
 }
 
 class FitlogApp extends StatelessWidget {
@@ -46,8 +51,6 @@ class FitlogApp extends StatelessWidget {
     );
   }
 }
-
-
 
 class WorkoutListScreen extends StatefulWidget {
   const WorkoutListScreen({super.key});
@@ -73,7 +76,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     final List<String> encodedWorkouts = await _repository.loadWorkouts();
     setState(() {
       _allWorkoutRecords.clear();
-      _allWorkoutRecords.addAll(encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))));
+      _allWorkoutRecords.addAll(
+        encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))),
+      );
       _applyFilter(); // 読み込み後にフィルタを適用
     });
   }
@@ -82,9 +87,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     setState(() {
       _filteredWorkoutRecords = _allWorkoutRecords.where((record) {
         return record.date != null &&
-               record.date!.year == _selectedDay.year &&
-               record.date!.month == _selectedDay.month &&
-               record.date!.day == _selectedDay.day;
+            record.date!.year == _selectedDay.year &&
+            record.date!.month == _selectedDay.month &&
+            record.date!.day == _selectedDay.day;
       }).toList();
     });
   }
@@ -100,7 +105,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   void _editWorkoutRecord(int index, WorkoutRecord updatedRecord) {
     setState(() {
       // _allWorkoutRecordsから元のレコードを見つけて更新
-      final originalIndex = _allWorkoutRecords.indexOf(_filteredWorkoutRecords[index]);
+      final originalIndex = _allWorkoutRecords.indexOf(
+        _filteredWorkoutRecords[index],
+      );
       if (originalIndex != -1) {
         _allWorkoutRecords[originalIndex] = updatedRecord;
       }
@@ -112,7 +119,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   void _removeWorkoutRecord(int index) {
     setState(() {
       // _allWorkoutRecordsから元のレコードを見つけて削除
-      final originalIndex = _allWorkoutRecords.indexOf(_filteredWorkoutRecords[index]);
+      final originalIndex = _allWorkoutRecords.indexOf(
+        _filteredWorkoutRecords[index],
+      );
       if (originalIndex != -1) {
         _allWorkoutRecords.removeAt(originalIndex);
       }
@@ -122,7 +131,9 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   }
 
   Future<void> _saveWorkouts() async {
-    final List<String> encodedWorkouts = _allWorkoutRecords.map((e) => jsonEncode(e.toJson())).toList();
+    final List<String> encodedWorkouts = _allWorkoutRecords
+        .map((e) => jsonEncode(e.toJson()))
+        .toList();
     await _repository.saveWorkouts(encodedWorkouts);
   }
 
@@ -135,7 +146,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('筋トレ記録 (${DateFormat('yyyy/MM/dd').format(_selectedDay)})'),
+        title: Text('${DateFormat('yyyy/MM/dd').format(_selectedDay)}'),
       ),
       body: Column(
         children: [
@@ -181,12 +192,14 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                         index: index,
                         onDismissed: (idx) => _removeWorkoutRecord(idx),
                         onTap: () async {
-                          final updatedRecord = await Navigator.push<WorkoutRecord>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddWorkoutScreen(initialRecord: record),
-                            ),
-                          );
+                          final updatedRecord =
+                              await Navigator.push<WorkoutRecord>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AddWorkoutScreen(initialRecord: record),
+                                ),
+                              );
 
                           if (updatedRecord != null) {
                             _editWorkoutRecord(index, updatedRecord);
@@ -202,9 +215,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
         onPressed: () async {
           final newRecord = await Navigator.push<WorkoutRecord>(
             context,
-            MaterialPageRoute(
-              builder: (context) => const AddWorkoutScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddWorkoutScreen()),
           );
 
           if (newRecord != null) {
@@ -223,12 +234,9 @@ class _EmptyWorkoutListMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('記録がありません。右下のボタンから追加してください。'),
-    );
+    return const Center(child: Text('記録がありません。右下のボタンから追加してください。'));
   }
 }
-
 
 class WorkoutRecordItem extends StatelessWidget {
   final WorkoutRecord record;
@@ -280,9 +288,9 @@ class WorkoutRecordItem extends StatelessWidget {
         },
         onDismissed: (direction) {
           onDismissed(index);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('「${record.name}」を削除しました')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('「${record.name}」を削除しました')));
         },
         child: GestureDetector(
           onTap: onTap,
@@ -300,7 +308,9 @@ class WorkoutRecordItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8.0),
-                  Text('日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}'),
+                  Text(
+                    '日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}',
+                  ),
                   Text('回数: ${record.reps}'),
                   Text('セット数: ${record.sets}'),
                 ],
@@ -366,16 +376,16 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('新しい記録'),
-      ),
+      appBar: AppBar(title: const Text('新しい記録')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ListTile(
-              title: Text("日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}"),
+              title: Text(
+                "日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}",
+              ),
               trailing: const Icon(Icons.calendar_today),
               onTap: () => _selectDate(context),
             ),
