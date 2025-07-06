@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const FitlogApp());
@@ -10,19 +11,22 @@ class WorkoutRecord {
   final String name;
   final int reps;
   final int sets;
+  final DateTime date;
 
-  WorkoutRecord({required this.name, required this.reps, required this.sets});
+  WorkoutRecord({required this.name, required this.reps, required this.sets, required this.date});
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'reps': reps,
         'sets': sets,
+        'date': date.toIso8601String(),
       };
 
   factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
         name: json['name'] as String,
         reps: json['reps'] as int,
         sets: json['sets'] as int,
+        date: DateTime.parse(json['date'] as String),
       );
 }
 
@@ -232,6 +236,7 @@ class WorkoutRecordItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8.0),
+                  Text('日付: ${DateFormat('yyyy/MM/dd').format(record.date)}'),
                   Text('回数: ${record.reps}'),
                   Text('セット数: ${record.sets}'),
                 ],
@@ -257,6 +262,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final TextEditingController _workoutNameController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -265,6 +271,21 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       _workoutNameController.text = widget.initialRecord!.name;
       _repsController.text = widget.initialRecord!.reps.toString();
       _setsController.text = widget.initialRecord!.sets.toString();
+      _selectedDate = widget.initialRecord!.date;
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
     }
   }
 
@@ -287,6 +308,12 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            ListTile(
+              title: Text("日付: ${DateFormat('yyyy/MM/dd').format(_selectedDate)}"),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () => _selectDate(context),
+            ),
+            const SizedBox(height: 16.0),
             TextField(
               controller: _workoutNameController,
               decoration: const InputDecoration(
@@ -324,6 +351,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                     name: workoutName,
                     reps: reps,
                     sets: sets,
+                    date: _selectedDate,
                   );
                   Navigator.pop(context, newRecord);
                 } else {
