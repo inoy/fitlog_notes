@@ -146,7 +146,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${DateFormat('yyyy/MM/dd').format(_selectedDay)}'),
+        title: Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
       ),
       body: Column(
         children: [
@@ -312,7 +312,7 @@ class WorkoutRecordItem extends StatelessWidget {
                     '日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}',
                   ),
                   Text('回数: ${record.reps}'),
-                  Text('セット数: ${record.sets}'),
+                                  
                 ],
               ),
             ),
