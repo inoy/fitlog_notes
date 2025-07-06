@@ -11,22 +11,22 @@ class WorkoutRecord {
   final String name;
   final int reps;
   final int sets;
-  final DateTime date;
+  final DateTime? date;
 
-  WorkoutRecord({required this.name, required this.reps, required this.sets, required this.date});
+  WorkoutRecord({required this.name, required this.reps, required this.sets, this.date});
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'reps': reps,
         'sets': sets,
-        'date': date.toIso8601String(),
+        'date': date?.toIso8601String(),
       };
 
   factory WorkoutRecord.fromJson(Map<String, dynamic> json) => WorkoutRecord(
         name: json['name'] as String,
         reps: json['reps'] as int,
         sets: json['sets'] as int,
-        date: json['date'] != null ? DateTime.parse(json['date'] as String) : DateTime.now(),
+        date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
       );
 }
 
@@ -236,7 +236,7 @@ class WorkoutRecordItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8.0),
-                  Text('日付: ${DateFormat('yyyy/MM/dd').format(record.date)}'),
+                  Text('日付: ${record.date != null ? DateFormat('yyyy/MM/dd').format(record.date!) : '未設定'}'),
                   Text('回数: ${record.reps}'),
                   Text('セット数: ${record.sets}'),
                 ],
@@ -262,7 +262,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final TextEditingController _workoutNameController = TextEditingController();
   final TextEditingController _repsController = TextEditingController();
   final TextEditingController _setsController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -272,13 +272,15 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       _repsController.text = widget.initialRecord!.reps.toString();
       _setsController.text = widget.initialRecord!.sets.toString();
       _selectedDate = widget.initialRecord!.date;
+    } else {
+      _selectedDate = DateTime.now(); // 新規作成時は現在日付をデフォルトに
     }
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _selectedDate ?? DateTime.now(), // nullの場合は現在日付を初期値に
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
@@ -309,7 +311,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ListTile(
-              title: Text("日付: ${DateFormat('yyyy/MM/dd').format(_selectedDate)}"),
+              title: Text("日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}"),
               trailing: const Icon(Icons.calendar_today),
               onTap: () => _selectDate(context),
             ),
