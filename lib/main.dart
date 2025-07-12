@@ -163,7 +163,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
               ),
             );
           },
-          child: const Icon(CupertinoIcons.sportscourt),
+          child: const Icon(CupertinoIcons.game_controller),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -499,43 +499,54 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              title: Text(
-                "日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}",
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _selectDate(context),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}",
+                      style: const TextStyle(color: CupertinoColors.label),
+                    ),
+                    const Icon(CupertinoIcons.calendar, color: CupertinoColors.systemBlue),
+                  ],
+                ),
               ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () => _selectDate(context),
             ),
             const SizedBox(height: 16.0),
-            DropdownButtonFormField<String>(
-              value: _selectedExerciseId,
-              decoration: const InputDecoration(
-                labelText: '種目名',
-                border: OutlineInputBorder(),
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: CupertinoColors.systemGrey4),
+                borderRadius: BorderRadius.circular(8.0),
               ),
-              items: _exercises.map((exercise) {
-                return DropdownMenuItem(
-                  value: exercise.id,
-                  child: Text(exercise.name),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedExerciseId = newValue;
-                  // 種目選択時にデフォルトのWorkoutTypeを設定
-                  if (newValue != null) {
-                    final selectedExercise = _exercises.firstWhere((e) => e.id == newValue);
-                    _workoutDetails.clear(); // 既存の詳細をクリア
-                    _addWorkoutDetail(selectedExercise.defaultWorkoutType);
-                  }
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '種目を選択してください';
-                }
-                return null;
-              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('種目名', style: TextStyle(color: CupertinoColors.systemGrey)),
+                  const SizedBox(height: 8.0),
+                  SizedBox(
+                    height: 120.0,
+                    child: CupertinoPicker(
+                      itemExtent: 32.0,
+                      onSelectedItemChanged: (int index) {
+                        if (_exercises.isNotEmpty) {
+                          setState(() {
+                            _selectedExerciseId = _exercises[index].id;
+                            final selectedExercise = _exercises[index];
+                            _workoutDetails.clear();
+                            _addWorkoutDetail(selectedExercise.defaultWorkoutType);
+                          });
+                        }
+                      },
+                      children: _exercises.map((exercise) => Text(exercise.name)).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16.0),
             Text('詳細', style: Theme.of(context).textTheme.titleMedium),
@@ -551,34 +562,34 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: TextField(
+                            child: CupertinoTextField(
                               controller: TextEditingController(text: detail.value.toString()),
-                              decoration: const InputDecoration(
-                                labelText: '値',
-                                border: OutlineInputBorder(),
-                              ),
+                              placeholder: '値',
                               keyboardType: TextInputType.number,
                               onChanged: (value) => _updateWorkoutDetailValue(index, value),
+                              padding: const EdgeInsets.all(12.0),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: CupertinoColors.systemGrey4),
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8.0),
-                          DropdownButton<WorkoutType>(
-                            value: detail.type,
-                            items: WorkoutType.values.map((type) {
-                              return DropdownMenuItem(
-                                value: type,
-                                child: Text(type == WorkoutType.reps ? '回' : '秒'),
-                              );
-                            }).toList(),
-                            onChanged: (WorkoutType? newType) {
-                              if (newType != null) {
-                                _updateWorkoutDetailType(index, newType);
-                              }
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            onPressed: () {
+                              // ピッカーで種類を選択（簡略化でタップで切り替え）
+                              final newType = detail.type == WorkoutType.reps 
+                                  ? WorkoutType.seconds 
+                                  : WorkoutType.reps;
+                              _updateWorkoutDetailType(index, newType);
                             },
+                            child: Text(detail.type == WorkoutType.reps ? '回' : '秒'),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
                             onPressed: () => _removeWorkoutDetail(index),
+                            child: const Icon(CupertinoIcons.delete, color: CupertinoColors.destructiveRed),
                           ),
                         ],
                       ),
@@ -587,17 +598,17 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                 },
               ),
             ),
-            ElevatedButton(
+            CupertinoButton(
               onPressed: () {
                 if (_selectedExerciseId != null) {
                   final selectedExercise = _exercises.firstWhere((e) => e.id == _selectedExerciseId);
                   _addWorkoutDetail(selectedExercise.defaultWorkoutType);
                 }
               },
-              child: const Text('詳細を追加'),
+              child: const Text('詳細を追加', style: TextStyle(color: CupertinoColors.systemBlue)),
             ),
             const SizedBox(height: 32.0),
-            ElevatedButton(
+            CupertinoButton.filled(
               onPressed: () {
                 if (_selectedExerciseId != null && _workoutDetails.isNotEmpty) {
                   final newRecord = WorkoutRecord(
