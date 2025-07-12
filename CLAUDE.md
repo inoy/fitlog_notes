@@ -1,227 +1,53 @@
 # CLAUDE.md
 
-このファイルは、このリポジトリでコードを操作する際のClaude Code (claude.ai/code) へのガイダンスを提供します。
+このファイルは、FitlogNotes アプリを開発する上でのプロジェクトの目標とユーザーの要望をまとめたものです。
 
-## プロジェクト概要
+## 中核となる目標
 
-FitlogNotesは、個人用の筋トレ記録を行うFlutter製iOSフィットネス追跡アプリケーションです。このプロジェクトは、各コード変更について明確な説明を伴うステップバイステップの実装を通じて、Flutterの学習に重点を置いています。
+- Flutter を使い、個人用の筋トレ記録 iOS アプリを開発する。
 
-## 開発コマンド
+## ユーザーの要望と制約
 
-### アプリの実行
-```bash
-flutter run                          # デフォルトデバイスで実行
-flutter run -d <device-id>          # 特定のデバイスで実行
-flutter run -d "iPhone 13 mini"     # iOSシミュレータで実行
-flutter devices                     # 利用可能なデバイスを一覧表示
-```
-
-### コード品質
-```bash
-flutter analyze                     # 静的解析（analysis_options.yamlとflutter_lintsを使用）
-```
-
-### 依存関係とビルド
-```bash
-flutter pub get                     # 依存関係の更新（pubspec.yaml変更後に必須）
-flutter clean                       # クリーンビルド（問題発生時）
-flutter pub deps                    # 依存関係ツリーの表示
-```
-
-### その他のコマンド
-```bash
-open -a Simulator                   # iOSシミュレータを起動
-```
-
-### ホットリロード
-- `r`キーでホットリロード
-- `R`キーでホットリスタート
-- `h`キーでヘルプ
-- `q`キーで終了
-
-## アーキテクチャ
-
-### コア構造
-- **Models**: JSON シリアライゼーション機能付きデータクラス（`Exercise`、`WorkoutRecord`、`WorkoutDetail`、`WeeklyMenuItem`）
-- **Repositories**: `shared_preferences`を使用したローカルストレージのデータ永続化レイヤー
-- **Screens**: Flutterウィジェット分割ベストプラクティスに従ったUIコンポーネント
-
-### 主要コンポーネント
-
-#### データレイヤー
-- `ExerciseRepository`: 事前定義データフォールバック機能付きエクササイズ定義管理
-- `WorkoutRepository`: ワークアウト記録の永続化処理
-- `WeeklyWorkoutMenuRepository`: 週間ワークアウトメニューアイテム管理
-- すべてのリポジトリは`shared_preferences`を使用したJSONベースのローカルストレージを使用
-
-#### モデル
-- `Exercise`: デフォルト`WorkoutType`（回数/時間）付きワークアウトタイプ定義
-- `WorkoutRecord`: エクササイズ参照と複数の詳細を含む個別ワークアウトセッション
-- `WorkoutDetail`: 特定のワークアウト指標（値 + タイプ: 回数または秒）
-- `WeeklyMenuItem`: 週間ワークアウト計画構造
+- **開発スタイル:** 一つ一つのステップごとに進め、各コード変更について明確な解説を行う。
+- **プラットフォーム:** 主なターゲットは iOS とする。Cupertino デザインを適用する。
+- **コミット方針:** one step ごとにコミットする。
+- **ドキュメント方針:** Flutter 関連の技術的な詳細や学習内容は、`docs/` ディレクトリにまとめる。
 
 ## 開発方針
 
 ### ウィジェット分割のベストプラクティス
 
-UIの複雑性を管理し、コードの可読性、再利用性、テスト容易性を向上させるため、以下の原則を適用します：
+UI の複雑性を管理し、コードの可読性、再利用性、テスト容易性を向上させるため、以下の原則を適用します：
 
 1. **単一責任の原則 (SRP) に基づく分割**
+
    - 一つのウィジェットは一つの明確な責任のみを持つ
    - `build`メソッドが複雑になったら新しいウィジェットとして切り出す
 
-2. **UIとロジックの分離**
-   - UI描画に特化したウィジェット（`StatelessWidget`）と状態管理ウィジェット（`StatefulWidget`）を明確に区別
+2. **UI とロジックの分離**
+
+   - UI 描画に特化したウィジェット（`StatelessWidget`）と状態管理ウィジェット（`StatefulWidget`）を明確に区別
    - 可能な限り`StatelessWidget`を使用
 
 3. **小さなウィジェットの作成**
+
    - 深いネストを避け、各ウィジェットの`build`メソッドを簡潔に保つ
    - コードの変更を特定のウィジェットに限定し、副作用のリスクを削減
 
 4. **明確なインターフェース**
    - コンストラクタ引数（`final`フィールド）やコールバック関数（`ValueChanged`など）を通じた明確なインターフェース定義
-   - 一方向データフロー：親→子へデータ、子→親へイベント通知
+   - 一方向データフロー：親 → 子へデータ、子 → 親へイベント通知
 
-### データの永続化
-- 軽量なキーバリューストレージに`shared_preferences`を使用
-- データはアプリセッション間で永続化されるが、アプリアンインストール時に消失
-- すべてのモデルが`toJson()`/`fromJson()`でシリアライゼーション実装
-- リポジトリがエンコード/デコードとフォールバックデータを処理
+### コード変更時の説明方法
 
-### ナビゲーション構造
-- メイン画面：カレンダービューと日次ワークアウトフィルタリング機能付き`WorkoutListScreen`
-- エクササイズ管理：ワークアウトタイプ定義用`ExerciseListScreen`
-- 週間計画：ワークアウトスケジューリング用`WeeklyMenuScreen`
-- 記録入力：ワークアウト記録作成/編集用`AddWorkoutScreen`
-
-## 依存関係
-
-主要パッケージ：
-- `shared_preferences`: ローカルデータ永続化
-- `table_calendar`: 日付選択カレンダーウィジェット
-- `intl`: 日付フォーマットと国際化
-- `uuid`: 一意識別子生成
-- `flutter_lints`: コード品質とスタイル強制
-- `cupertino_icons`: iOS風Cupertinoアイコンセット（**必須**）
-
-## 開発ガイドライン
-
-### 基本方針
-- **学習目標**: このプロジェクトを通してFlutterを学習する
-- **開発スタイル**: 一つ一つのステップごとに進め、各コード変更について明確な解説を行う
-- **コミット方針**: ワンステップごとにコミットする
-- **ドキュメント方針**: Flutter関連の技術的詳細や学習内容は`docs/`ディレクトリにまとめる
-
-### Flutter学習サポート方針
-
-#### コード変更時の説明方法
 - **実装前**: 何を実装するか、なぜ必要かを明確に説明
-- **実装中**: コードの意味、Flutterの概念、ベストプラクティスを解説
+- **実装中**: コードの意味、Flutter の概念、ベストプラクティスを解説
 - **実装後**: 変更の影響、学習ポイント、次のステップを整理
-
-#### 重要概念の解説タイミング
-- 新しいウィジェットを導入する際：そのウィジェットの役割と使い方
-- 状態管理を変更する際：StatefulWidgetとStatelessWidgetの違い
-- データ構造を追加する際：Dartの型システムとnull safety
-- UI構造を変更する際：ウィジェット分割の理由と効果
-
-#### 初心者向け配慮事項
-- 専門用語には必ず日本語での説明を併記
-- コードの動作確認方法を具体的に説明
-- エラーが発生した場合の対処法を提示
-- 学習の進捗を実感できる小さな成果を重視
 
 ### ステップバイステップ実装ガイド
 
-#### 標準的な機能実装フロー
-1. **要件分析**: 実装する機能の目的と仕様を明確化
-2. **設計検討**: アーキテクチャへの影響とウィジェット分割を検討
-3. **段階的実装**: 最小単位での実装とテスト
-4. **統合とテスト**: 既存機能との連携確認
-5. **文書化**: 学習内容を`docs/`に記録
-6. **コミット**: 明確なコミットメッセージで変更を記録
-
 #### ステップの粒度設定
-- **1ステップ = 1つの明確な機能追加**: 例「日付選択機能の追加」
-- **複雑な機能は複数ステップに分割**: 例「週間メニュー機能」→「モデル作成」→「UI実装」→「データ連携」
+
+- **1 ステップ = 1 つの明確な機能追加**: 例「日付選択機能の追加」
+- **複雑な機能は複数ステップに分割**: 例「週間メニュー機能」→「モデル作成」→「UI 実装」→「データ連携」
 - **各ステップで動作確認可能**: 途中でも意味のある状態を維持
-
-#### 各ステップでの学習ポイント
-- そのステップで使用するFlutterの概念
-- 実装したコードがアプリ全体に与える影響
-- 今後の開発で応用できる技術やパターン
-
-### 技術文書化戦略
-
-#### `docs/`ディレクトリの活用方法
-- **FLUTTER_LIFECYCLE.md**: Flutterの基本概念（ライフサイクル等）
-- **PERSISTENCE.md**: データ永続化の仕組み
-- **ARCHITECTURE.md**: アプリの全体設計（必要に応じて作成）
-- **TROUBLESHOOTING.md**: よくある問題と解決法（必要に応じて作成）
-
-#### 学習内容の記録方法
-- 実装した機能ごとに学んだ概念を整理
-- コードサンプルと解説をセットで記録
-- 失敗例や改善点も含めて記録し、今後の参考にする
-
-#### 振り返りやすい文書構造
-- 各文書にはインデックスと参照リンクを含める
-- 実際のコードファイルの場所を明記
-- 関連する公式ドキュメントへのリンクを提供
-
-### 実装ルール
-- 確立されたウィジェット分割パターンに従う
-- UIテキストには日本語を使用（ターゲット：日本のユーザー）
-- 機能追加時は既存のデータ構造との互換性を維持
-- すべてのFlutter開発にウィジェット分割ベストプラクティスを適用し、コードベースの一貫性と品質を維持
-
-## Cupertino化の手順とベストプラクティス
-
-### 必須の依存関係
-1. **`pubspec.yaml`への追加**: `cupertino_icons: ^1.0.2`を依存関係に追加
-2. **依存関係の更新**: `flutter pub get`を実行
-3. **クリーンビルド**: 必要に応じて`flutter clean`を実行
-
-### 段階的な変更手順
-1. **依存関係の確認・追加** - 最重要ステップ
-2. **インポート文の追加**: `import 'package:flutter/cupertino.dart';`
-3. **アプリ基盤の変更**: `MaterialApp` → `CupertinoApp`
-4. **画面構造の変更**: `Scaffold` → `CupertinoPageScaffold`
-5. **ナビゲーションの変更**: `AppBar` → `CupertinoNavigationBar`
-6. **個別ウィジェットの変更**: 各MaterialウィジェットをCupertinoウィジェットに段階的に変更
-7. **各段階でのテスト実行**: エラーの早期発見
-
-### 主要なウィジェット対応表
-- `MaterialApp` → `CupertinoApp`
-- `Scaffold` → `CupertinoPageScaffold`
-- `AppBar` → `CupertinoNavigationBar`
-- `TextField` → `CupertinoTextField`
-- `ElevatedButton` → `CupertinoButton.filled`
-- `TextButton` → `CupertinoButton`
-- `RadioListTile` → `CupertinoButton`（選択状態を色で表現）
-- `Card` → `Container`（角丸、シャドウ、システムカラー）
-- `FloatingActionButton` → `CupertinoButton.filled`
-- `MaterialPageRoute` → `CupertinoPageRoute`
-
-### トラブルシューティング優先順位
-1. **依存関係の確認**: `pubspec.yaml`に`cupertino_icons`が追加されているか
-2. **インポート文の確認**: 必要なCupertinoインポートが存在するか
-3. **個別ウィジェット・アイコンの確認**: 存在しないCupertinoIconsを使用していないか
-
-### よくある問題と解決法
-- **MaterialLocalizationsエラー**: CupertinoApp内でMaterialウィジェットを使用している
-- **アイコンが表示されない**: `cupertino_icons`依存関係の不足、または存在しないアイコン名
-- **レイアウト崩れ**: CupertinoウィジェットとMaterialウィジェットの混在
-
-### 実装済み機能
-- Flutterプロジェクトの初期設定
-- 筋トレ記録の追加、表示、永続化（`shared_preferences`による保存・読み込み）
-- 筋トレ記録の編集・削除機能
-- 筋トレ記録に日付を追加する機能（nullable対応済み）
-- トップ画面にカレンダーと今日の記録表示（`table_calendar`導入済み）
-- ウィジェット分割のベストプラクティス適用
-- 筋トレ種目管理機能の基盤（`Exercise`モデル、`ExerciseRepository`、`ExerciseListScreen`）
-- 週間筋トレメニュー管理機能の基盤（`WorkoutType`、`WorkoutDetail`、`WeeklyMenuItem`モデル、`WeeklyWorkoutMenuRepository`、`WeeklyMenuScreen`）
-- 種目管理機能の拡張（`Exercise`モデルに`WorkoutType`を追加、`ExerciseListScreen`で`WorkoutType`の選択UIを実装）
-- 筋トレ記録機能の更新（`WorkoutRecord`モデルを`List<WorkoutDetail>`に対応、`AddWorkoutScreen`と`WorkoutRecordItem`を更新）
-- 週間メニュー追加画面の実装（`AddWeeklyMenuItemScreen`で種目、曜日、複数の`WorkoutDetail`の入力に対応）
