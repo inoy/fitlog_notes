@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitlog_notes/models/exercise.dart';
+import 'package:fitlog_notes/data/predefined_data.dart';
 
 import 'package:collection/collection.dart';
 
@@ -16,8 +17,9 @@ class ExerciseRepository {
   Future<List<Exercise>> loadExercises() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? encodedExercises = prefs.getStringList(_keyExercises);
-    if (encodedExercises == null) {
-      return [];
+    if (encodedExercises == null || encodedExercises.isEmpty) {
+      await saveExercises(predefinedExercises);
+      return predefinedExercises;
     }
     return encodedExercises.map((e) => Exercise.fromJson(jsonDecode(e))).toList();
   }
