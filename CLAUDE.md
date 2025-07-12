@@ -21,6 +21,13 @@ flutter devices                     # 利用可能なデバイスを一覧表示
 flutter analyze                     # 静的解析（analysis_options.yamlとflutter_lintsを使用）
 ```
 
+### 依存関係とビルド
+```bash
+flutter pub get                     # 依存関係の更新（pubspec.yaml変更後に必須）
+flutter clean                       # クリーンビルド（問題発生時）
+flutter pub deps                    # 依存関係ツリーの表示
+```
+
 ### その他のコマンド
 ```bash
 open -a Simulator                   # iOSシミュレータを起動
@@ -95,6 +102,7 @@ UIの複雑性を管理し、コードの可読性、再利用性、テスト容
 - `intl`: 日付フォーマットと国際化
 - `uuid`: 一意識別子生成
 - `flutter_lints`: コード品質とスタイル強制
+- `cupertino_icons`: iOS風Cupertinoアイコンセット（**必須**）
 
 ## 開発ガイドライン
 
@@ -166,6 +174,44 @@ UIの複雑性を管理し、コードの可読性、再利用性、テスト容
 - UIテキストには日本語を使用（ターゲット：日本のユーザー）
 - 機能追加時は既存のデータ構造との互換性を維持
 - すべてのFlutter開発にウィジェット分割ベストプラクティスを適用し、コードベースの一貫性と品質を維持
+
+## Cupertino化の手順とベストプラクティス
+
+### 必須の依存関係
+1. **`pubspec.yaml`への追加**: `cupertino_icons: ^1.0.2`を依存関係に追加
+2. **依存関係の更新**: `flutter pub get`を実行
+3. **クリーンビルド**: 必要に応じて`flutter clean`を実行
+
+### 段階的な変更手順
+1. **依存関係の確認・追加** - 最重要ステップ
+2. **インポート文の追加**: `import 'package:flutter/cupertino.dart';`
+3. **アプリ基盤の変更**: `MaterialApp` → `CupertinoApp`
+4. **画面構造の変更**: `Scaffold` → `CupertinoPageScaffold`
+5. **ナビゲーションの変更**: `AppBar` → `CupertinoNavigationBar`
+6. **個別ウィジェットの変更**: 各MaterialウィジェットをCupertinoウィジェットに段階的に変更
+7. **各段階でのテスト実行**: エラーの早期発見
+
+### 主要なウィジェット対応表
+- `MaterialApp` → `CupertinoApp`
+- `Scaffold` → `CupertinoPageScaffold`
+- `AppBar` → `CupertinoNavigationBar`
+- `TextField` → `CupertinoTextField`
+- `ElevatedButton` → `CupertinoButton.filled`
+- `TextButton` → `CupertinoButton`
+- `RadioListTile` → `CupertinoButton`（選択状態を色で表現）
+- `Card` → `Container`（角丸、シャドウ、システムカラー）
+- `FloatingActionButton` → `CupertinoButton.filled`
+- `MaterialPageRoute` → `CupertinoPageRoute`
+
+### トラブルシューティング優先順位
+1. **依存関係の確認**: `pubspec.yaml`に`cupertino_icons`が追加されているか
+2. **インポート文の確認**: 必要なCupertinoインポートが存在するか
+3. **個別ウィジェット・アイコンの確認**: 存在しないCupertinoIconsを使用していないか
+
+### よくある問題と解決法
+- **MaterialLocalizationsエラー**: CupertinoApp内でMaterialウィジェットを使用している
+- **アイコンが表示されない**: `cupertino_icons`依存関係の不足、または存在しないアイコン名
+- **レイアウト崩れ**: CupertinoウィジェットとMaterialウィジェットの混在
 
 ### 実装済み機能
 - Flutterプロジェクトの初期設定
