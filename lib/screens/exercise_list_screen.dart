@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 import 'package:fitlog_notes/models/workout_type.dart';
@@ -34,8 +34,10 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
 
   Future<void> _addExercise() async {
     if (_exerciseNameController.text.isEmpty) {
+      HapticFeedback.heavyImpact();
       return;
     }
+    HapticFeedback.lightImpact();
     final newExercise = Exercise(
       id: _uuid.v4(),
       name: _exerciseNameController.text,
@@ -54,6 +56,51 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
       _exercises.removeAt(index);
     });
     await _repository.saveExercises(_exercises);
+  }
+
+  void _showDeleteConfirmation(BuildContext context, Exercise exercise, int index) {
+    HapticFeedback.mediumImpact();
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text('確認'),
+        content: Text('「${exercise.name}」を削除してもよろしいですか？'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+            child: const Text('キャンセル'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              Navigator.of(context).pop();
+              _removeExercise(index);
+              _showDeletedMessage(context, exercise);
+            },
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeletedMessage(BuildContext context, Exercise exercise) {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        content: Text('「${exercise.name} (${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'})」を削除しました'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -153,22 +200,18 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                     itemCount: _exercises.length,
                     itemBuilder: (context, index) {
                       final exercise = _exercises[index];
-                      return Dismissible(
-                        key: ValueKey(exercise.id),
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20.0),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (direction) {
-                          _removeExercise(index);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(
-                                '「${exercise.name} (${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'})」を削除しました')),
-                          );
-                        },
+                      return CupertinoContextMenu(
+                        actions: [
+                          CupertinoContextMenuAction(
+                            isDestructiveAction: true,
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _showDeleteConfirmation(context, exercise, index);
+                            },
+                            trailingIcon: CupertinoIcons.delete,
+                            child: const Text('削除'),
+                          ),
+                        ],
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                           padding: const EdgeInsets.all(16.0),

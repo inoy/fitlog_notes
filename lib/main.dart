@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
@@ -51,6 +51,8 @@ class FitlogApp extends StatelessWidget {
       theme: const CupertinoThemeData(
         primaryColor: CupertinoColors.systemBlue,
         brightness: Brightness.light,
+        barBackgroundColor: CupertinoColors.systemBackground,
+        scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
       ),
       home: const WorkoutListScreen(),
     );
@@ -201,11 +203,11 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
             ),
             calendarStyle: const CalendarStyle(
               todayDecoration: BoxDecoration(
-                color: Colors.blueGrey,
+                color: CupertinoColors.systemGrey,
                 shape: BoxShape.circle,
               ),
               selectedDecoration: BoxDecoration(
-                color: Colors.blueAccent,
+                color: CupertinoColors.systemBlue,
                 shape: BoxShape.circle,
               ),
             ),
@@ -317,46 +319,67 @@ class _WorkoutRecordItemState extends State<WorkoutRecordItem> {
     });
   }
 
+  void _showDeleteConfirmation(BuildContext context) {
+    HapticFeedback.mediumImpact();
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text('確認'),
+        content: const Text('この記録を削除してもよろしいですか？'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+            child: const Text('キャンセル'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              Navigator.of(context).pop();
+              widget.onDismissed(widget.index);
+              _showDeletedMessage(context);
+            },
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeletedMessage(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        content: Text('「$_exerciseName」を削除しました'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Dismissible(
-        key: ObjectKey(widget.record),
-        background: Container(
-          color: Colors.red,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20.0),
-          child: const Icon(Icons.delete, color: Colors.white),
-        ),
-        direction: DismissDirection.endToStart,
-        confirmDismiss: (direction) async {
-          return await showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("確認"),
-                content: const Text("この記録を削除してもよろしいですか？"),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text("キャンセル"),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text("削除"),
-                  ),
-                ],
-              );
+      child: CupertinoContextMenu(
+        actions: [
+          CupertinoContextMenuAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _showDeleteConfirmation(context);
             },
-          );
-        },
-        onDismissed: (direction) {
-          widget.onDismissed(widget.index);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('「$_exerciseName」を削除しました')));
-        },
+            trailingIcon: CupertinoIcons.delete,
+            child: const Text('削除'),
+          ),
+        ],
         child: GestureDetector(
           onTap: widget.onTap,
           child: Container(
@@ -389,7 +412,7 @@ class _WorkoutRecordItemState extends State<WorkoutRecordItem> {
                   style: const TextStyle(color: CupertinoColors.systemGrey),
                 ),
                 ...widget.record.details.map((detail) => Text(
-                    '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')).toList(),
+                    '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')),
               ],
             ),
           ),
@@ -439,17 +462,56 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    DateTime tempDate = _selectedDate ?? DateTime.now();
+    
+    await showCupertinoModalPopup(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(), // nullの場合は現在日付を初期値に
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
+      builder: (BuildContext context) => Container(
+        height: 300,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('キャンセル'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    CupertinoButton(
+                      child: const Text('完了'),
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = tempDate;
+                        });
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: tempDate,
+                  onDateTimeChanged: (DateTime newDate) {
+                    tempDate = newDate;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
   }
 
   void _addWorkoutDetail(WorkoutType defaultType) {
@@ -549,50 +611,55 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               ),
             ),
             const SizedBox(height: 16.0),
-            Text('詳細', style: Theme.of(context).textTheme.titleMedium),
+            const Text('詳細', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             Expanded(
               child: ListView.builder(
                 itemCount: _workoutDetails.length,
                 itemBuilder: (context, index) {
                   final detail = _workoutDetails[index];
-                  return Card(
+                  return Container(
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CupertinoTextField(
-                              controller: TextEditingController(text: detail.value.toString()),
-                              placeholder: '値',
-                              keyboardType: TextInputType.number,
-                              onChanged: (value) => _updateWorkoutDetailValue(index, value),
-                              padding: const EdgeInsets.all(12.0),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: CupertinoColors.systemGrey4),
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemBackground,
+                      borderRadius: BorderRadius.circular(10.0),
+                      border: Border.all(
+                        color: CupertinoColors.systemGrey4,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CupertinoTextField(
+                            controller: TextEditingController(text: detail.value.toString()),
+                            placeholder: '値',
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) => _updateWorkoutDetailValue(index, value),
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: CupertinoColors.systemGrey4),
+                              borderRadius: BorderRadius.circular(8.0),
                             ),
                           ),
-                          const SizedBox(width: 8.0),
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            onPressed: () {
-                              // ピッカーで種類を選択（簡略化でタップで切り替え）
-                              final newType = detail.type == WorkoutType.reps
-                                  ? WorkoutType.seconds
-                                  : WorkoutType.reps;
-                              _updateWorkoutDetailType(index, newType);
-                            },
-                            child: Text(detail.type == WorkoutType.reps ? '回' : '秒'),
-                          ),
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () => _removeWorkoutDetail(index),
-                            child: const Icon(CupertinoIcons.delete, color: CupertinoColors.destructiveRed),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8.0),
+                        CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          onPressed: () {
+                            final newType = detail.type == WorkoutType.reps
+                                ? WorkoutType.seconds
+                                : WorkoutType.reps;
+                            _updateWorkoutDetailType(index, newType);
+                          },
+                          child: Text(detail.type == WorkoutType.reps ? '回' : '秒'),
+                        ),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: () => _removeWorkoutDetail(index),
+                          child: const Icon(CupertinoIcons.delete, color: CupertinoColors.destructiveRed),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -611,6 +678,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             CupertinoButton.filled(
               onPressed: () {
                 if (_selectedExerciseId != null && _workoutDetails.isNotEmpty) {
+                  HapticFeedback.lightImpact();
                   final newRecord = WorkoutRecord(
                     exerciseId: _selectedExerciseId!,
                     details: _workoutDetails,
@@ -618,7 +686,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                   );
                   Navigator.pop(context, newRecord);
                 } else {
-                  // エラーハンドリング（例: SnackBarを表示するなど）
+                  HapticFeedback.heavyImpact();
                 }
               },
               child: const Text('保存'),

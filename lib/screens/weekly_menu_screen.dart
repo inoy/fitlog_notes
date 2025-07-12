@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:fitlog_notes/data/weekly_workout_menu_repository.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/weekly_menu_item.dart';
@@ -48,54 +48,93 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('週間メニュー'),
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('週間メニュー'),
       ),
-      body: Column(
-        children: [
-          // TODO: 曜日ごとのタブまたはセクション
-          Expanded(
-            child: ListView.builder(
-              itemCount: _weeklyMenu.length,
-              itemBuilder: (context, index) {
-                final item = _weeklyMenu[index];
-                final exercise = _exercises.firstWhere(
-                  (e) => e.id == item.exerciseId,
-                  orElse: () => Exercise(id: '', name: 'Unknown'),
-                );
-                return Card(
-                  margin: const EdgeInsets.all(8.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${_getDayName(item.dayOfWeek)}: ${exercise.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        ...item.details.map((detail) => Text(
-                            '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')).toList(),
-                      ],
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: _weeklyMenu.isEmpty
+                  ? const Center(
+                      child: Text(
+                        '週間メニューがありません。\n下のボタンから追加してください。',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: CupertinoColors.systemGrey),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: _weeklyMenu.length,
+                      itemBuilder: (context, index) {
+                        final item = _weeklyMenu[index];
+                        final exercise = _exercises.firstWhere(
+                          (e) => e.id == item.exerciseId,
+                          orElse: () => Exercise(id: '', name: 'Unknown'),
+                        );
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8.0),
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.systemBackground,
+                            borderRadius: BorderRadius.circular(12.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: CupertinoColors.systemGrey.withOpacity(0.1),
+                                blurRadius: 4.0,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_getDayName(item.dayOfWeek)}: ${exercise.name}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8.0),
+                              ...item.details.map(
+                                (detail) => Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newMenuItem = await Navigator.push<WeeklyMenuItem>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddWeeklyMenuItemScreen(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: CupertinoButton.filled(
+                onPressed: () async {
+                  final newMenuItem = await Navigator.push<WeeklyMenuItem>(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (context) => const AddWeeklyMenuItemScreen(),
+                    ),
+                  );
+                  if (newMenuItem != null) {
+                    _addWeeklyMenuItem(newMenuItem);
+                  }
+                },
+                child: const Text('メニューを追加'),
+              ),
             ),
-          );
-          if (newMenuItem != null) {
-            _addWeeklyMenuItem(newMenuItem);
-          }
-        },
-        child: const Icon(Icons.add),
+          ],
+        ),
       ),
     );
   }
