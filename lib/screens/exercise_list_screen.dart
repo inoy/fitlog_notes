@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
 import 'package:fitlog_notes/models/workout_type.dart';
@@ -63,11 +64,12 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('種目管理'),
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('種目管理'),
       ),
-      body: Column(
+      child: SafeArea(
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -76,48 +78,70 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child: CupertinoTextField(
                         controller: _exerciseNameController,
-                        decoration: const InputDecoration(
-                          labelText: '新しい種目名',
-                          border: OutlineInputBorder(),
+                        placeholder: '新しい種目名',
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: CupertinoColors.systemGrey4),
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8.0),
-                    ElevatedButton(
+                    CupertinoButton.filled(
                       onPressed: _addExercise,
                       child: const Text('追加'),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<WorkoutType>(
-                        title: const Text('回数'),
-                        value: WorkoutType.reps,
-                        groupValue: _selectedWorkoutType,
-                        onChanged: (WorkoutType? value) {
-                          setState(() {
-                            _selectedWorkoutType = value!;
-                          });
-                        },
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedWorkoutType = WorkoutType.reps;
+                            });
+                          },
+                          color: _selectedWorkoutType == WorkoutType.reps 
+                              ? CupertinoColors.systemBlue 
+                              : CupertinoColors.systemGrey5,
+                          child: Text(
+                            '回数',
+                            style: TextStyle(
+                              color: _selectedWorkoutType == WorkoutType.reps 
+                                  ? CupertinoColors.white 
+                                  : CupertinoColors.label,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: RadioListTile<WorkoutType>(
-                        title: const Text('秒数'),
-                        value: WorkoutType.seconds,
-                        groupValue: _selectedWorkoutType,
-                        onChanged: (WorkoutType? value) {
-                          setState(() {
-                            _selectedWorkoutType = value!;
-                          });
-                        },
+                      const SizedBox(width: 8.0),
+                      Expanded(
+                        child: CupertinoButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedWorkoutType = WorkoutType.seconds;
+                            });
+                          },
+                          color: _selectedWorkoutType == WorkoutType.seconds 
+                              ? CupertinoColors.systemBlue 
+                              : CupertinoColors.systemGrey5,
+                          child: Text(
+                            '秒数',
+                            style: TextStyle(
+                              color: _selectedWorkoutType == WorkoutType.seconds 
+                                  ? CupertinoColors.white 
+                                  : CupertinoColors.label,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -145,12 +169,39 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                                 '「${exercise.name} (${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'})」を削除しました')),
                           );
                         },
-                        child: Card(
+                        child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                          child: ListTile(
-                            title: Text(exercise.name),
-                            subtitle: Text(
-                                'タイプ: ${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'}'),
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.systemBackground,
+                            borderRadius: BorderRadius.circular(10.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: CupertinoColors.systemGrey.withOpacity(0.2),
+                                blurRadius: 2.0,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                exercise.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4.0),
+                              Text(
+                                'タイプ: ${exercise.defaultWorkoutType == WorkoutType.reps ? '回数' : '秒数'}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: CupertinoColors.systemGrey,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -158,6 +209,7 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
                   ),
           ),
         ],
+        ),
       ),
     );
   }

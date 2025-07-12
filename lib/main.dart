@@ -163,7 +163,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
               ),
             );
           },
-          child: const Icon(CupertinoIcons.game_controller),
+          child: const Icon(CupertinoIcons.add),
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -579,8 +579,8 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
                             onPressed: () {
                               // ピッカーで種類を選択（簡略化でタップで切り替え）
-                              final newType = detail.type == WorkoutType.reps 
-                                  ? WorkoutType.seconds 
+                              final newType = detail.type == WorkoutType.reps
+                                  ? WorkoutType.seconds
                                   : WorkoutType.reps;
                               _updateWorkoutDetailType(index, newType);
                             },

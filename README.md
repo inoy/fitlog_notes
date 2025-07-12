@@ -2,6 +2,12 @@
 
 A new Flutter project.
 
+## Flutter
+
+### パッケージ更新
+
+`pubspec.yaml` 更新後 `flutter pub get`
+
 ## CLAUDE
 
 ### アップデート方法
