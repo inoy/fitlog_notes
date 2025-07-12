@@ -2,16 +2,17 @@
 
 A new Flutter project.
 
-## NEXT
+## CLAUDE
 
-次回再開時のプロンプト:
+### アップデート方法
 
+基本は自動で更新される 手動で更新する場合は
+
+```sh
+claude update
 ```
-こんにちは。FitlogNotesプロジェクトの続きをお願いします。
-GEMINI.mdにプロジェクトの概要と進め方を記載していますので、必要に応じて参照してください。
 
-次のステップを続けましょう。
-```
+https://docs.anthropic.com/en/docs/claude-code/setup#update-claude-code
 
 ## 検証
 
