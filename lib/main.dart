@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
@@ -45,11 +46,11 @@ class FitlogApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return CupertinoApp(
       title: 'FitlogNotes',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
+      theme: const CupertinoThemeData(
+        primaryColor: CupertinoColors.systemBlue,
+        brightness: Brightness.light,
       ),
       home: const WorkoutListScreen(),
     );
@@ -149,35 +150,35 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
-        leading: IconButton(
-          icon: const Icon(Icons.fitness_center),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
+              CupertinoPageRoute(
                 builder: (context) => const ExerciseListScreen(),
               ),
             );
           },
+          child: const Icon(CupertinoIcons.sportscourt),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_view_week),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const WeeklyMenuScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) => const WeeklyMenuScreen(),
+              ),
+            );
+          },
+          child: const Icon(CupertinoIcons.calendar),
+        ),
       ),
-      body: Column(
+      child: Column(
         children: [
           TableCalendar(
             focusedDay: _focusedDay,
@@ -224,7 +225,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                           final updatedRecord =
                               await Navigator.push<WorkoutRecord>(
                                 context,
-                                MaterialPageRoute(
+                                CupertinoPageRoute(
                                   builder: (context) =>
                                       AddWorkoutScreen(initialRecord: record),
                                 ),
@@ -239,21 +240,23 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                     },
                   ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final newRecord = await Navigator.push<WorkoutRecord>(
-            context,
-            MaterialPageRoute(builder: (context) => const AddWorkoutScreen()),
-          );
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: CupertinoButton.filled(
+              onPressed: () async {
+                final newRecord = await Navigator.push<WorkoutRecord>(
+                  context,
+                  CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
+                );
 
-          if (newRecord != null) {
-            _addWorkoutRecord(newRecord);
-          }
-        },
-        tooltip: '記録を追加',
-        child: const Icon(Icons.add),
+                if (newRecord != null) {
+                  _addWorkoutRecord(newRecord);
+                }
+              },
+              child: const Text('記録を追加'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -356,27 +359,38 @@ class _WorkoutRecordItemState extends State<WorkoutRecordItem> {
         },
         child: GestureDetector(
           onTap: widget.onTap,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    _exerciseName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground,
+              borderRadius: BorderRadius.circular(10.0),
+              boxShadow: [
+                BoxShadow(
+                  color: CupertinoColors.systemGrey.withOpacity(0.2),
+                  blurRadius: 2.0,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _exerciseName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    '日付: ${widget.record.date != null ? DateFormat('yyyy/MM/dd').format(widget.record.date!) : '未設定'}',
-                  ),
-                  ...widget.record.details.map((detail) => Text(
-                      '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')).toList(),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  '日付: ${widget.record.date != null ? DateFormat('yyyy/MM/dd').format(widget.record.date!) : '未設定'}',
+                  style: const TextStyle(color: CupertinoColors.systemGrey),
+                ),
+                ...widget.record.details.map((detail) => Text(
+                    '${detail.value} ${detail.type == WorkoutType.reps ? '回' : '秒'}')).toList(),
+              ],
             ),
           ),
         ),
@@ -475,9 +489,12 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('新しい記録')),
-      body: Padding(
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('新しい記録'),
+      ),
+      child: SafeArea(
+        child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -596,6 +613,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               child: const Text('保存'),
             ),
           ],
+        ),
         ),
       ),
     );
