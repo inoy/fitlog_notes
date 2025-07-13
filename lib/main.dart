@@ -466,7 +466,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: CupertinoColors.black.withOpacity(0.2),
+                    color: CupertinoColors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

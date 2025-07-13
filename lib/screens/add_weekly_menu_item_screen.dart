@@ -8,8 +8,9 @@ import 'package:fitlog_notes/models/workout_type.dart';
 
 class AddWeeklyMenuItemScreen extends StatefulWidget {
   final WeeklyMenuItem? initialItem;
+  final int? initialDay;
 
-  const AddWeeklyMenuItemScreen({super.key, this.initialItem});
+  const AddWeeklyMenuItemScreen({super.key, this.initialItem, this.initialDay});
 
   @override
   State<AddWeeklyMenuItemScreen> createState() => _AddWeeklyMenuItemScreenState();
@@ -31,7 +32,7 @@ class _AddWeeklyMenuItemScreenState extends State<AddWeeklyMenuItemScreen> {
       _selectedDayOfWeek = widget.initialItem!.dayOfWeek;
       _workoutDetails.addAll(widget.initialItem!.details);
     } else {
-      _selectedDayOfWeek = DateTime.monday; // デフォルトは月曜日
+      _selectedDayOfWeek = widget.initialDay ?? DateTime.monday; // デフォルトは指定された曜日または月曜日
     }
   }
 
