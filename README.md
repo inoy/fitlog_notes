@@ -48,3 +48,26 @@ d Detach (terminate "flutter run" but leave application running).
 c Clear the screen
 q Quit (terminate the application on the device).
 ```
+
+## Git
+
+### 機密データの削除
+
+```sh
+brew install git-filter-repo
+mkdir -p ~/tmp && cd ~/tmp/ && git clone git@github.com:inoy/fitlog_notes.git && cd fitlog_notes
+git-filter-repo --sensitive-data-removal --invert-paths --path PATH-TO-YOUR-FILE-WITH-SENSITIVE-DATA
+git push --force --mirror origin
+```
+
+https://docs.github.com/ja/enterprise-cloud@latest/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository
+
+もとのローカルリポジトリは以下でresetすればOK
+
+```sh
+git reset --hard origin/main
+```
+
+> You have divergent branches and need to specify how to reconcile them.
+
+が表示されるため
