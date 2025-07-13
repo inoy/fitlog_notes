@@ -71,3 +71,9 @@ git reset --hard origin/main
 > You have divergent branches and need to specify how to reconcile them.
 
 が表示されるため
+
+## Note
+
+### macOSで通知
+
+`osascript -e 'display notification "message" with title "title" subtitle "subtitle" sound name "Breeze"'`
