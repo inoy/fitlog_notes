@@ -23,7 +23,7 @@ class AppConstants {
   static const double iconSizeLarge = 24.0;
   static const double iconSizeDefault = 20.0;
   static const double iconSizeSmall = 16.0;
-  
+
   // アイコン色
   static const Color iconColorPrimary = CupertinoColors.systemBlue;
   static const Color iconColorSecondary = CupertinoColors.systemGrey;
@@ -179,27 +179,27 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   void _addWorkoutRecord(WorkoutRecord record) async {
     // 目標の進捗チェック（ワークアウト追加前）
     final previousProgress = await _goalRepository.calculateProgress();
-    
+
     setState(() {
       _allWorkoutRecords.add(record);
       _applyFilter();
     });
     _saveWorkouts();
-    
+
     // ストリーク更新
     final previousStreak = _currentStreakData.currentStreak;
     final updatedStreak = await _streakRepository.updateStreakWithNewWorkout(
       record.date ?? DateTime.now()
     );
-    
+
     setState(() {
       _currentStreakData = updatedStreak;
     });
-    
+
     // 目標達成チェック（ワークアウト追加後）
     final currentProgress = await _goalRepository.calculateProgress();
     final goalAchieved = await _goalRepository.checkGoalAchievement(previousProgress, currentProgress);
-    
+
     // 新記録達成時のお祝い
     if (updatedStreak.currentStreak > previousStreak) {
       HapticFeedback.lightImpact();
@@ -248,7 +248,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   void _showStreakCelebration(StreakData streakData) {
     String title = '';
     String message = '';
-    
+
     if (streakData.currentStreak == 1) {
       title = '🎉 記録開始！';
       message = 'ワークアウトの記録を始めました！継続していきましょう！';
@@ -262,7 +262,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
       title = '🔥 ${streakData.currentStreak}日連続！';
       message = '素晴らしい継続力です！この調子で続けましょう！';
     }
-    
+
     showCupertinoDialog(
       context: context,
       builder: (BuildContext context) => CupertinoAlertDialog(
@@ -284,7 +284,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   void _showGoalAchievementCelebration(GoalProgress progress) {
     String title = '';
     String message = '';
-    
+
     if (progress.isWeeklyGoalAchieved && progress.isMonthlyGoalAchieved) {
       title = '🎯 両方の目標達成！';
       message = '週間・月間目標の両方を達成しました！素晴らしい継続力です！';
@@ -295,7 +295,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
       title = '🏆 月間目標達成！';
       message = '今月の目標を達成しました！継続の成果が出ています！';
     }
-    
+
     showCupertinoDialog(
       context: context,
       builder: (BuildContext context) => CupertinoAlertDialog(
@@ -323,118 +323,177 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => const StatsScreen(),
+        middle: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                setState(() {
+                  _focusedDay = DateTime(
+                    _focusedDay.year,
+                    _focusedDay.month - 1,
+                  );
+                });
+              },
+              child: const Icon(
+                CupertinoIcons.chevron_left,
+                size: AppConstants.iconSizeDefault,
               ),
-            );
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(builder: (context) => const StatsScreen()),
+                );
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(DateFormat('yyyy年M月').format(_focusedDay)),
+                  const Text(
+                    'タップで統計表示',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: CupertinoColors.secondaryLabel,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                setState(() {
+                  _focusedDay = DateTime(
+                    _focusedDay.year,
+                    _focusedDay.month + 1,
+                  );
+                });
+              },
+              child: const Icon(
+                CupertinoIcons.chevron_right,
+                size: AppConstants.iconSizeDefault,
+              ),
+            ),
+          ],
+        ),
+        leading: null,
+        trailing: null,
+      ),
+      child: Stack(
+        children: [
+          Column(
             children: [
-              Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
-              const Text(
-                'タップで統計表示',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: CupertinoColors.secondaryLabel,
+              StreakCard(key: ValueKey(_currentStreakData)),
+              const GoalCard(),
+              TableCalendar(
+                focusedDay: _focusedDay,
+                firstDay: DateTime.utc(2000, 1, 1),
+                lastDay: DateTime.utc(2050, 12, 31),
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selectedDay, day);
+                },
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                    _applyFilter();
+                  });
+                },
+                calendarFormat: CalendarFormat.week,
+                headerStyle: const HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                  headerMargin: EdgeInsets.zero,
+                  headerPadding: EdgeInsets.zero,
+                  titleTextStyle: TextStyle(fontSize: 0), // タイトルを見えなくする
+                  leftChevronVisible: false,
+                  rightChevronVisible: false,
                 ),
+                calendarStyle: const CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey,
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: CupertinoColors.systemBlue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _filteredWorkoutRecords.isEmpty
+                    ? const _EmptyWorkoutListMessage()
+                    : ListView.builder(
+                        itemCount: _filteredWorkoutRecords.length,
+                        itemBuilder: (context, index) {
+                          final record = _filteredWorkoutRecords[index];
+                          return WorkoutRecordItem(
+                            record: record,
+                            index: index,
+                            onDismissed: (idx) => _removeWorkoutRecord(idx),
+                            onTap: () async {
+                              final updatedRecord =
+                                  await Navigator.push<WorkoutRecord>(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (context) => AddWorkoutScreen(
+                                        initialRecord: record,
+                                      ),
+                                    ),
+                                  );
+
+                              if (updatedRecord != null) {
+                                _editWorkoutRecord(index, updatedRecord);
+                              }
+                            },
+                            exerciseRepository: _exerciseRepository,
+                          );
+                        },
+                      ),
               ),
             ],
           ),
-        ),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () async {
-            final newRecord = await Navigator.push<WorkoutRecord>(
-              context,
-              CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
-            );
-
-            if (newRecord != null) {
-              _addWorkoutRecord(newRecord);
-            }
-          },
-          child: const Icon(CupertinoIcons.add, size: AppConstants.iconSizeLarge),
-        ),
-        trailing: null,
-      ),
-      child: Column(
-        children: [
-          StreakCard(key: ValueKey(_currentStreakData)),
-          const GoalCard(),
-          TableCalendar(
-            focusedDay: _focusedDay,
-            firstDay: DateTime.utc(2000, 1, 1),
-            lastDay: DateTime.utc(2050, 12, 31),
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-                _applyFilter();
-              });
-            },
-            calendarFormat: CalendarFormat.week,
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-              leftChevronIcon: Icon(
-                CupertinoIcons.chevron_left,
-                color: AppConstants.iconColorPrimary,
-                size: AppConstants.iconSizeDefault,
-              ),
-              rightChevronIcon: Icon(
-                CupertinoIcons.chevron_right,
-                color: AppConstants.iconColorPrimary,
-                size: AppConstants.iconSizeDefault,
-              ),
-            ),
-            calendarStyle: const CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: CupertinoColors.systemGrey,
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: BoxDecoration(
+          // BlueSkyスタイルのFloating Action Button
+          Positioned(
+            right: 12,
+            bottom: 12, // タブバーとの干渉を避けるため高く配置
+            child: Container(
+              decoration: BoxDecoration(
                 color: CupertinoColors.systemBlue,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: CupertinoButton(
+                padding: const EdgeInsets.all(16),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  final newRecord = await Navigator.push<WorkoutRecord>(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (context) => const AddWorkoutScreen(),
+                    ),
+                  );
+
+                  if (newRecord != null) {
+                    _addWorkoutRecord(newRecord);
+                  }
+                },
+                child: const Icon(
+                  CupertinoIcons.add,
+                  color: CupertinoColors.white,
+                  size: 28,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: _filteredWorkoutRecords.isEmpty
-                ? const _EmptyWorkoutListMessage()
-                : ListView.builder(
-                    itemCount: _filteredWorkoutRecords.length,
-                    itemBuilder: (context, index) {
-                      final record = _filteredWorkoutRecords[index];
-                      return WorkoutRecordItem(
-                        record: record,
-                        index: index,
-                        onDismissed: (idx) => _removeWorkoutRecord(idx),
-                        onTap: () async {
-                          final updatedRecord =
-                              await Navigator.push<WorkoutRecord>(
-                                context,
-                                CupertinoPageRoute(
-                                  builder: (context) =>
-                                      AddWorkoutScreen(initialRecord: record),
-                                ),
-                              );
-
-                          if (updatedRecord != null) {
-                            _editWorkoutRecord(index, updatedRecord);
-                          }
-                        },
-                        exerciseRepository: _exerciseRepository,
-                      );
-                    },
-                  ),
           ),
         ],
       ),
@@ -665,7 +724,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime tempDate = _selectedDate ?? DateTime.now();
-    
+
     await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) => Container(
