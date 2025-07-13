@@ -18,6 +18,18 @@ import 'package:fitlog_notes/widgets/goal_card.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+class AppConstants {
+  // アイコンサイズ
+  static const double iconSizeLarge = 24.0;
+  static const double iconSizeDefault = 20.0;
+  static const double iconSizeSmall = 16.0;
+  
+  // アイコン色
+  static const Color iconColorPrimary = CupertinoColors.systemBlue;
+  static const Color iconColorSecondary = CupertinoColors.systemGrey;
+  static const Color iconColorDestructive = CupertinoColors.destructiveRed;
+}
+
 void main() {
   runApp(const FitlogApp());
 }
@@ -302,7 +314,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
               _addWorkoutRecord(newRecord);
             }
           },
-          child: const Icon(CupertinoIcons.add, size: 24),
+          child: const Icon(CupertinoIcons.add, size: AppConstants.iconSizeLarge),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -317,7 +329,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                   ),
                 );
               },
-              child: const Icon(CupertinoIcons.settings, size: 20),
+              child: const Icon(CupertinoIcons.settings, size: AppConstants.iconSizeDefault),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
@@ -329,7 +341,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                   ),
                 );
               },
-              child: const Icon(CupertinoIcons.calendar, size: 20),
+              child: const Icon(CupertinoIcons.calendar, size: AppConstants.iconSizeDefault),
             ),
           ],
         ),
@@ -356,6 +368,16 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
             headerStyle: const HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
+              leftChevronIcon: Icon(
+                CupertinoIcons.chevron_left,
+                color: AppConstants.iconColorPrimary,
+                size: AppConstants.iconSizeDefault,
+              ),
+              rightChevronIcon: Icon(
+                CupertinoIcons.chevron_right,
+                color: AppConstants.iconColorPrimary,
+                size: AppConstants.iconSizeDefault,
+              ),
             ),
             calendarStyle: const CalendarStyle(
               todayDecoration: BoxDecoration(
@@ -737,7 +759,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                       "日付: ${_selectedDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDate!) : '未設定'}",
                       style: const TextStyle(color: CupertinoColors.label),
                     ),
-                    const Icon(CupertinoIcons.calendar, color: CupertinoColors.systemBlue),
+                    const Icon(CupertinoIcons.calendar, color: AppConstants.iconColorPrimary),
                   ],
                 ),
               ),
@@ -821,7 +843,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                         CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: () => _removeWorkoutDetail(index),
-                          child: const Icon(CupertinoIcons.delete, color: CupertinoColors.destructiveRed),
+                          child: const Icon(CupertinoIcons.delete, color: AppConstants.iconColorDestructive),
                         ),
                       ],
                     ),
