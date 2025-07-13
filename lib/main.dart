@@ -3,11 +3,18 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:fitlog_notes/data/workout_repository.dart';
 import 'package:fitlog_notes/data/exercise_repository.dart';
+import 'package:fitlog_notes/data/streak_repository.dart';
+import 'package:fitlog_notes/data/goal_repository.dart';
 import 'package:fitlog_notes/models/exercise.dart';
+import 'package:fitlog_notes/models/streak_data.dart';
+import 'package:fitlog_notes/models/goal_data.dart';
 import 'package:fitlog_notes/screens/exercise_list_screen.dart';
 import 'package:fitlog_notes/screens/weekly_menu_screen.dart';
+import 'package:fitlog_notes/screens/stats_screen.dart';
 import 'package:fitlog_notes/models/workout_detail.dart';
 import 'package:fitlog_notes/models/workout_type.dart';
+import 'package:fitlog_notes/widgets/streak_card.dart';
+import 'package:fitlog_notes/widgets/goal_card.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -47,7 +54,7 @@ class FitlogApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoApp(
-      title: 'FitlogNotes',
+      title: 'FitlogNotes - モチベーション筋トレ記録',
       theme: const CupertinoThemeData(
         primaryColor: CupertinoColors.systemBlue,
         brightness: Brightness.light,
@@ -69,15 +76,19 @@ class WorkoutListScreen extends StatefulWidget {
 class _WorkoutListScreenState extends State<WorkoutListScreen> {
   final WorkoutRepository _repository = WorkoutRepository();
   final ExerciseRepository _exerciseRepository = ExerciseRepository();
+  final StreakRepository _streakRepository = StreakRepository();
+  final GoalRepository _goalRepository = GoalRepository();
   final List<WorkoutRecord> _allWorkoutRecords = []; // 全ての記録を保持
   List<WorkoutRecord> _filteredWorkoutRecords = []; // フィルタリングされた記録
   DateTime _focusedDay = DateTime.now(); // カレンダーの表示月
   DateTime _selectedDay = DateTime.now(); // 選択された日付
+  StreakData _currentStreakData = StreakData.empty;
 
   @override
   void initState() {
     super.initState();
     _loadWorkouts();
+    _loadStreakData();
   }
 
   Future<void> _loadWorkouts() async {
@@ -88,6 +99,13 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
         encodedWorkouts.map((e) => WorkoutRecord.fromJson(jsonDecode(e))),
       );
       _applyFilter(); // 読み込み後にフィルタを適用
+    });
+  }
+
+  Future<void> _loadStreakData() async {
+    final streakData = await _streakRepository.loadStreakData();
+    setState(() {
+      _currentStreakData = streakData;
     });
   }
 
@@ -102,12 +120,38 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     });
   }
 
-  void _addWorkoutRecord(WorkoutRecord record) {
+  void _addWorkoutRecord(WorkoutRecord record) async {
+    // 目標の進捗チェック（ワークアウト追加前）
+    final previousProgress = await _goalRepository.calculateProgress();
+    
     setState(() {
       _allWorkoutRecords.add(record);
       _applyFilter();
     });
     _saveWorkouts();
+    
+    // ストリーク更新
+    final previousStreak = _currentStreakData.currentStreak;
+    final updatedStreak = await _streakRepository.updateStreakWithNewWorkout(
+      record.date ?? DateTime.now()
+    );
+    
+    setState(() {
+      _currentStreakData = updatedStreak;
+    });
+    
+    // 目標達成チェック（ワークアウト追加後）
+    final currentProgress = await _goalRepository.calculateProgress();
+    final goalAchieved = await _goalRepository.checkGoalAchievement(previousProgress, currentProgress);
+    
+    // 新記録達成時のお祝い
+    if (updatedStreak.currentStreak > previousStreak) {
+      HapticFeedback.lightImpact();
+      _showStreakCelebration(updatedStreak);
+    } else if (goalAchieved) {
+      HapticFeedback.lightImpact();
+      _showGoalAchievementCelebration(currentProgress);
+    }
   }
 
   void _editWorkoutRecord(int index, WorkoutRecord updatedRecord) {
@@ -145,6 +189,75 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
     await _repository.saveWorkouts(encodedWorkouts);
   }
 
+  void _showStreakCelebration(StreakData streakData) {
+    String title = '';
+    String message = '';
+    
+    if (streakData.currentStreak == 1) {
+      title = '🎉 記録開始！';
+      message = 'ワークアウトの記録を始めました！継続していきましょう！';
+    } else if (streakData.currentStreak == streakData.longestStreak) {
+      title = '🏆 新記録達成！';
+      message = '${streakData.currentStreak}日連続で新記録です！素晴らしい継続力です！';
+    } else if (streakData.currentStreak % 7 == 0) {
+      title = '✨ ${streakData.currentStreak ~/ 7}週間達成！';
+      message = '${streakData.currentStreak}日連続記録中！この調子で続けましょう！';
+    } else {
+      title = '🔥 ${streakData.currentStreak}日連続！';
+      message = '素晴らしい継続力です！この調子で続けましょう！';
+    }
+    
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+            child: const Text('ありがとう！'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGoalAchievementCelebration(GoalProgress progress) {
+    String title = '';
+    String message = '';
+    
+    if (progress.isWeeklyGoalAchieved && progress.isMonthlyGoalAchieved) {
+      title = '🎯 両方の目標達成！';
+      message = '週間・月間目標の両方を達成しました！素晴らしい継続力です！';
+    } else if (progress.isWeeklyGoalAchieved) {
+      title = '✨ 週間目標達成！';
+      message = '今週の目標を達成しました！この調子で月間目標も目指しましょう！';
+    } else if (progress.isMonthlyGoalAchieved) {
+      title = '🏆 月間目標達成！';
+      message = '今月の目標を達成しました！継続の成果が出ています！';
+    }
+    
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
+            child: const Text('やったー！'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -154,7 +267,29 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
+        middle: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) => const StatsScreen(),
+              ),
+            );
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(DateFormat('yyyy/MM/dd').format(_selectedDay)),
+              const Text(
+                'タップで統計表示',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: CupertinoColors.secondaryLabel,
+                ),
+              ),
+            ],
+          ),
+        ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () {
@@ -182,6 +317,8 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
       ),
       child: Column(
         children: [
+          StreakCard(key: ValueKey(_currentStreakData)),
+          const GoalCard(),
           TableCalendar(
             focusedDay: _focusedDay,
             firstDay: DateTime.utc(2000, 1, 1),
@@ -269,7 +406,67 @@ class _EmptyWorkoutListMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('記録がありません。右下のボタンから追加してください。'));
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey6,
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const Icon(
+              CupertinoIcons.sportscourt,
+              size: 48,
+              color: CupertinoColors.systemGrey,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'まだワークアウトの記録がありません',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.label,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '下のボタンから最初の記録を\n追加してみましょう！',
+            style: TextStyle(
+              fontSize: 14,
+              color: CupertinoColors.secondaryLabel,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          CupertinoButton.filled(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            onPressed: () async {
+              final newRecord = await Navigator.push<WorkoutRecord>(
+                context,
+                CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
+              );
+
+              if (newRecord != null && context.mounted) {
+                final state = context.findAncestorStateOfType<_WorkoutListScreenState>();
+                state?._addWorkoutRecord(newRecord);
+              }
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(CupertinoIcons.add),
+                SizedBox(width: 8),
+                Text('最初の記録を追加'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
