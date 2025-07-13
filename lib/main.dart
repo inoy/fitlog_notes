@@ -292,27 +292,46 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            final newRecord = await Navigator.push<WorkoutRecord>(
               context,
-              CupertinoPageRoute(
-                builder: (context) => const ExerciseListScreen(),
-              ),
+              CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
             );
+
+            if (newRecord != null) {
+              _addWorkoutRecord(newRecord);
+            }
           },
-          child: const Icon(CupertinoIcons.add),
+          child: const Icon(CupertinoIcons.add, size: 24),
         ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () {
-            Navigator.push(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => const WeeklyMenuScreen(),
-              ),
-            );
-          },
-          child: const Icon(CupertinoIcons.calendar),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const ExerciseListScreen(),
+                  ),
+                );
+              },
+              child: const Icon(CupertinoIcons.settings, size: 20),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => const WeeklyMenuScreen(),
+                  ),
+                );
+              },
+              child: const Icon(CupertinoIcons.calendar, size: 20),
+            ),
+          ],
         ),
       ),
       child: Column(
@@ -379,22 +398,6 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
                     },
                   ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: CupertinoButton.filled(
-              onPressed: () async {
-                final newRecord = await Navigator.push<WorkoutRecord>(
-                  context,
-                  CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
-                );
-
-                if (newRecord != null) {
-                  _addWorkoutRecord(newRecord);
-                }
-              },
-              child: const Text('記録を追加'),
-            ),
-          ),
         ],
       ),
     );
@@ -410,21 +413,8 @@ class _EmptyWorkoutListMessage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemGrey6,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: const Icon(
-              CupertinoIcons.sportscourt,
-              size: 48,
-              color: CupertinoColors.systemGrey,
-            ),
-          ),
-          const SizedBox(height: 20),
           const Text(
-            'まだワークアウトの記録がありません',
+            'ワークアウトの記録を始めましょう',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -432,37 +422,14 @@ class _EmptyWorkoutListMessage extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text(
-            '下のボタンから最初の記録を\n追加してみましょう！',
+            '上の＋ボタンから記録を追加できます',
             style: TextStyle(
               fontSize: 14,
               color: CupertinoColors.secondaryLabel,
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          CupertinoButton.filled(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            onPressed: () async {
-              final newRecord = await Navigator.push<WorkoutRecord>(
-                context,
-                CupertinoPageRoute(builder: (context) => const AddWorkoutScreen()),
-              );
-
-              if (newRecord != null && context.mounted) {
-                final state = context.findAncestorStateOfType<_WorkoutListScreenState>();
-                state?._addWorkoutRecord(newRecord);
-              }
-            },
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(CupertinoIcons.add),
-                SizedBox(width: 8),
-                Text('最初の記録を追加'),
-              ],
-            ),
           ),
         ],
       ),
