@@ -73,7 +73,51 @@ class FitlogApp extends StatelessWidget {
         barBackgroundColor: CupertinoColors.systemBackground,
         scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
       ),
-      home: const WorkoutListScreen(),
+      home: const MainTabScreen(),
+    );
+  }
+}
+
+class MainTabScreen extends StatelessWidget {
+  const MainTabScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoTabScaffold(
+      tabBar: CupertinoTabBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.home, size: AppConstants.iconSizeDefault),
+            label: 'ホーム',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.calendar, size: AppConstants.iconSizeDefault),
+            label: 'メニュー',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.chart_bar, size: AppConstants.iconSizeDefault),
+            label: '統計',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.settings, size: AppConstants.iconSizeDefault),
+            label: '設定',
+          ),
+        ],
+      ),
+      tabBuilder: (context, index) {
+        switch (index) {
+          case 0:
+            return const WorkoutListScreen();
+          case 1:
+            return const WeeklyMenuScreen();
+          case 2:
+            return const StatsScreen();
+          case 3:
+            return const ExerciseListScreen();
+          default:
+            return const WorkoutListScreen();
+        }
+      },
     );
   }
 }
@@ -316,35 +360,7 @@ class _WorkoutListScreenState extends State<WorkoutListScreen> {
           },
           child: const Icon(CupertinoIcons.add, size: AppConstants.iconSizeLarge),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) => const ExerciseListScreen(),
-                  ),
-                );
-              },
-              child: const Icon(CupertinoIcons.settings, size: AppConstants.iconSizeDefault),
-            ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) => const WeeklyMenuScreen(),
-                  ),
-                );
-              },
-              child: const Icon(CupertinoIcons.calendar, size: AppConstants.iconSizeDefault),
-            ),
-          ],
-        ),
+        trailing: null,
       ),
       child: Column(
         children: [
