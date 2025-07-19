@@ -20,14 +20,17 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
   final ExerciseRepository _exerciseRepository = ExerciseRepository();
   List<WeeklyMenuItem> _weeklyMenu = [];
   List<Exercise> _exercises = [];
-  final PageController _pageController = PageController(initialPage: DateTime.now().weekday - 1);
-  int _currentDay = DateTime.now().weekday;
+  final PageController _pageController = PageController();
+  int _currentDayIndex = DateTime.now().weekday - 1; // 0-6のインデックス
 
   @override
   void initState() {
     super.initState();
     _loadData();
   }
+
+  int get _currentDay => _currentDayIndex + 1;
+
 
   Future<void> _loadData() async {
     final loadedMenu = await _weeklyMenuRepository.loadWeeklyMenu();
@@ -85,11 +88,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
                   return GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
+                      _animateToDay(index);
                     },
                     child: Container(
                       width: 40,
@@ -119,36 +118,31 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
             ),
             // 曜日別メニューカード
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentDay = index + 1;
-                  });
+              child: GestureDetector(
+                onHorizontalDragEnd: (details) {
+                  if (details.primaryVelocity! > 300) {
+                    // 右へのスワイプ → 前の日
+                    _moveToPreviousDay();
+                  } else if (details.primaryVelocity! < -300) {
+                    // 左へのスワイプ → 次の日
+                    _moveToNextDay();
+                  }
                 },
-                itemCount: 7,
-                itemBuilder: (context, dayIndex) {
-                  final dayOfWeek = dayIndex + 1;
-                  final todaysMenu = _weeklyMenu
-                      .where((item) => item.dayOfWeek == dayOfWeek)
-                      .toList();
-                  return DayMenuCard(
-                    dayOfWeek: dayOfWeek,
-                    menu: todaysMenu,
-                    exercises: _exercises,
-                    onAddMenu: () async {
-                      final newMenuItem = await Navigator.push<WeeklyMenuItem>(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => AddWeeklyMenuItemScreen(initialDay: dayOfWeek),
-                        ),
-                      );
-                      if (newMenuItem != null) {
-                        _addWeeklyMenuItem(newMenuItem);
-                      }
-                    },
-                  );
-                },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return SlideTransition(
+                      position: animation.drive(
+                        Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).chain(CurveTween(curve: Curves.easeInOut)),
+                      ),
+                      child: child,
+                    );
+                  },
+                  child: _buildDayCard(),
+                ),
               ),
             ),
           ],
@@ -181,6 +175,51 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
       case 7: return '日';
       default: return '';
     }
+  }
+
+  void _animateToDay(int targetDayIndex) {
+    setState(() {
+      _currentDayIndex = targetDayIndex;
+    });
+  }
+
+  void _moveToNextDay() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _currentDayIndex = (_currentDayIndex + 1) % 7; // 0-6でループ
+    });
+  }
+
+  void _moveToPreviousDay() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _currentDayIndex = (_currentDayIndex - 1 + 7) % 7; // 0-6でループ
+    });
+  }
+
+  Widget _buildDayCard() {
+    final dayOfWeek = _currentDay;
+    final todaysMenu = _weeklyMenu
+        .where((item) => item.dayOfWeek == dayOfWeek)
+        .toList();
+    
+    return DayMenuCard(
+      key: ValueKey(_currentDayIndex), // AnimatedSwitcherのため
+      dayOfWeek: dayOfWeek,
+      menu: todaysMenu,
+      exercises: _exercises,
+      onAddMenu: () async {
+        final newMenuItem = await Navigator.push<WeeklyMenuItem>(
+          context,
+          CupertinoPageRoute(
+            builder: (context) => AddWeeklyMenuItemScreen(initialDay: dayOfWeek),
+          ),
+        );
+        if (newMenuItem != null) {
+          _addWeeklyMenuItem(newMenuItem);
+        }
+      },
+    );
   }
 
   @override
